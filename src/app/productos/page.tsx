@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { 
   Package, 
   Search, 
@@ -9,20 +9,46 @@ import {
   AlertTriangle, 
   CheckCircle2, 
   X,
-  Layers
+  FileUp,
+  FileText,
+  Trash2,
+  Sparkles,
+  RefreshCw,
+  Edit3
 } from "lucide-react";
 import { type Producto } from "@/db/schema";
+
+interface ProductoExtraido {
+  idTemp: string;
+  codigoSku: string;
+  nombre: string;
+  descripcion: string;
+  categoria: string;
+  precio: string;
+  stockActual: number;
+}
 
 export default function ProductosPage() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState("");
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>("Todas");
+  
+  // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [alerta, setAlerta] = useState<string | null>(null);
 
-  // Form State
+  // PDF Import State
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [procesandoPdf, setProcesandoPdf] = useState(false);
+  const [productosExtraidos, setProductosExtraidos] = useState<ProductoExtraido[]>([]);
+  const [guardandoBatch, setGuardandoBatch] = useState(false);
+  const [errorPdf, setErrorPdf] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Form State para nuevo producto individual
   const [form, setForm] = useState({
     codigoSku: "",
     nombre: "",
@@ -84,6 +110,87 @@ export default function ProductosPage() {
     }
   };
 
+  // Procesar archivo PDF
+  const handleProcesarArchivo = async (file: File) => {
+    if (!file.name.endsWith(".pdf")) {
+      setErrorPdf("El archivo seleccionado debe ser un documento en formato PDF.");
+      return;
+    }
+
+    setPdfFile(file);
+    setProcesandoPdf(true);
+    setErrorPdf(null);
+
+    const formData = new FormData();
+    formData.append("pdf", file);
+
+    try {
+      const res = await fetch("/api/productos/importar-pdf", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        if (data.productos && data.productos.length > 0) {
+          setProductosExtraidos(data.productos);
+        } else {
+          setErrorPdf("No se detectaron filas de productos con precios en el PDF. Intenta con una lista de precios o catálogo estructurado.");
+        }
+      } else {
+        setErrorPdf(data.error || "Error al leer el archivo PDF.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setErrorPdf("Ocurrió un error en la conexión al procesar el PDF.");
+    } finally {
+      setProcesandoPdf(false);
+    }
+  };
+
+  // Guardar productos extraídos en la base de datos
+  const handleGuardarProductosBatch = async () => {
+    if (productosExtraidos.length === 0) return;
+
+    setGuardandoBatch(true);
+    try {
+      const res = await fetch("/api/productos/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productos: productosExtraidos }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setIsPdfModalOpen(false);
+        setProductosExtraidos([]);
+        setPdfFile(null);
+        setAlerta(data.mensaje || `¡${data.importados} productos importados a la base de datos exitosamente!`);
+        setTimeout(() => setAlerta(null), 5000);
+        fetchProductos();
+      } else {
+        alert(data.error || "Error al guardar los productos");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error al guardar en el servidor");
+    } finally {
+      setGuardandoBatch(false);
+    }
+  };
+
+  const handleActualizarFila = (idTemp: string, campo: keyof ProductoExtraido, valor: any) => {
+    setProductosExtraidos((prev) =>
+      prev.map((item) => (item.idTemp === idTemp ? { ...item, [campo]: valor } : item))
+    );
+  };
+
+  const handleEliminarFila = (idTemp: string) => {
+    setProductosExtraidos((prev) => prev.filter((item) => item.idTemp !== idTemp));
+  };
+
   const categorias = ["Todas", ...Array.from(new Set(productos.map((p) => p.categoria)))];
 
   const productosFiltrados = productos.filter((p) => {
@@ -120,19 +227,36 @@ export default function ProductosPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Nuevo Producto</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Botón Importar Catálogo PDF */}
+          <button
+            onClick={() => {
+              setProductosExtraidos([]);
+              setPdfFile(null);
+              setErrorPdf(null);
+              setIsPdfModalOpen(true);
+            }}
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm shadow-blue-500/20 transition"
+          >
+            <FileUp className="w-4 h-4" />
+            <span>Importar Catálogo (PDF)</span>
+          </button>
+
+          {/* Botón Nuevo Producto */}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nuevo Producto</span>
+          </button>
+        </div>
       </div>
 
       {alerta && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          <span>{alerta}</span>
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center gap-2 shadow-sm animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span className="font-medium">{alerta}</span>
         </div>
       )}
 
@@ -174,7 +298,7 @@ export default function ProductosPage() {
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
           <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <p className="text-base font-semibold text-slate-700">No se encontraron productos</p>
-          <p className="text-xs text-slate-400 mt-1">Registra productos para armar tu catálogo comercial.</p>
+          <p className="text-xs text-slate-400 mt-1">Registra productos o importa un catálogo PDF para comenzar.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -232,7 +356,256 @@ export default function ProductosPage() {
         </div>
       )}
 
-      {/* Modal Nuevo Producto */}
+      {/* MODAL 1: IMPORTAR CATÁLOGO DESDE PDF */}
+      {isPdfModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl animate-fade-in relative max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                  <FileUp className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Importación Automática desde PDF</h2>
+                  <p className="text-xs text-slate-500">
+                    Carga una lista de precios o catálogo para extraer y poblar productos automáticamente.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsPdfModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-4 space-y-4">
+              {/* Zona de Carga si no hay productos extraídos aún */}
+              {productosExtraidos.length === 0 && (
+                <div className="space-y-4">
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) handleProcesarArchivo(file);
+                    }}
+                    className="border-2 border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/50 rounded-2xl p-10 text-center cursor-pointer transition flex flex-col items-center justify-center gap-3 bg-slate-50"
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleProcesarArchivo(file);
+                      }}
+                    />
+
+                    {procesandoPdf ? (
+                      <div className="flex flex-col items-center gap-3 py-4">
+                        <RefreshCw className="w-10 h-10 text-blue-600 animate-spin" />
+                        <p className="text-sm font-bold text-slate-800">
+                          Analizando documento y extrayendo productos...
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          Leyendo tablas, identificando códigos SKU, nombres y precios.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="p-4 bg-blue-100/70 text-blue-600 rounded-full">
+                          <FileText className="w-8 h-8" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">
+                            Arrastra tu archivo PDF aquí o haz clic para seleccionarlo
+                          </p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            Formatos soportados: Catálogos, listas de precios y cotizaciones estructuradas (.pdf)
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {errorPdf && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>{errorPdf}</span>
+                    </div>
+                  )}
+
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1.5">
+                    <p className="font-semibold text-slate-700 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      <span>¿Cómo funciona la extracción automática?</span>
+                    </p>
+                    <p className="text-slate-500 leading-relaxed">
+                      El sistema analiza el contenido del PDF reconociendo columnas de SKU, descripción, precios en cualquier divisa ($ o Bs) y cantidades. Antes de guardar, podrás revisar cada ítem en una tabla de confirmación.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Previsualización y Edición de Productos Extraídos */}
+              {productosExtraidos.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between bg-blue-50 border border-blue-200 p-3.5 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <p className="text-xs font-bold text-blue-900">
+                          Se detectaron {productosExtraidos.length} productos en "{pdfFile?.name}"
+                        </p>
+                        <p className="text-[11px] text-blue-700">
+                          Verifica o ajusta los valores directamente en la tabla antes de sincronizar con Neon.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setProductosExtraidos([]);
+                        setPdfFile(null);
+                      }}
+                      className="text-xs text-blue-700 hover:text-blue-900 font-semibold underline"
+                    >
+                      Subir otro archivo
+                    </button>
+                  </div>
+
+                  {/* Tabla Editable */}
+                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="max-h-[380px] overflow-y-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead className="bg-slate-100/80 sticky top-0 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
+                          <tr>
+                            <th className="py-2.5 px-3">Código SKU</th>
+                            <th className="py-2.5 px-3">Nombre del Producto</th>
+                            <th className="py-2.5 px-3">Categoría</th>
+                            <th className="py-2.5 px-3 w-28">Precio ($)</th>
+                            <th className="py-2.5 px-3 w-20">Stock</th>
+                            <th className="py-2.5 px-3 text-right">Quitar</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {productosExtraidos.map((item) => (
+                            <tr key={item.idTemp} className="hover:bg-slate-50">
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  value={item.codigoSku}
+                                  onChange={(e) =>
+                                    handleActualizarFila(item.idTemp, "codigoSku", e.target.value.toUpperCase())
+                                  }
+                                  className="w-full bg-white border border-slate-200 rounded px-2 py-1 font-mono uppercase font-semibold text-slate-800"
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  value={item.nombre}
+                                  onChange={(e) =>
+                                    handleActualizarFila(item.idTemp, "nombre", e.target.value)
+                                  }
+                                  className="w-full bg-white border border-slate-200 rounded px-2 py-1 font-medium text-slate-900"
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  value={item.categoria}
+                                  onChange={(e) =>
+                                    handleActualizarFila(item.idTemp, "categoria", e.target.value)
+                                  }
+                                  className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-700"
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={item.precio}
+                                  onChange={(e) =>
+                                    handleActualizarFila(item.idTemp, "precio", e.target.value)
+                                  }
+                                  className="w-full bg-white border border-slate-200 rounded px-2 py-1 font-bold text-slate-900"
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={item.stockActual}
+                                  onChange={(e) =>
+                                    handleActualizarFila(item.idTemp, "stockActual", parseInt(e.target.value) || 0)
+                                  }
+                                  className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-center font-semibold text-slate-800"
+                                />
+                              </td>
+                              <td className="py-2 px-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleEliminarFila(item.idTemp)}
+                                  className="text-slate-400 hover:text-rose-600 p-1"
+                                  title="Quitar fila"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer de acción */}
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between shrink-0">
+              <span className="text-xs text-slate-400">
+                {productosExtraidos.length > 0
+                  ? `${productosExtraidos.length} productos listos para sincronizar`
+                  : "Selecciona un archivo para continuar"}
+              </span>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPdfModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
+                >
+                  Cancelar
+                </button>
+
+                {productosExtraidos.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleGuardarProductosBatch}
+                    disabled={guardandoBatch}
+                    className="px-5 py-2.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>
+                      {guardandoBatch
+                        ? "Sincronizando con Neon..."
+                        : `Guardar en Base de Datos (${productosExtraidos.length})`}
+                    </span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: NUEVO PRODUCTO INDIVIDUAL */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-fade-in relative">

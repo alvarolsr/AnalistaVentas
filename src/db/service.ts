@@ -400,6 +400,52 @@ export const DataService = {
     return nuevo;
   },
 
+  async createProductosBatch(items: Array<Omit<Producto, "id" | "creadoEn">>): Promise<number> {
+    if (items.length === 0) return 0;
+    const db = getDb();
+    if (db) {
+      try {
+        for (const item of items) {
+          await db
+            .insert(productos)
+            .values(item)
+            .onConflictDoUpdate({
+              target: productos.codigoSku,
+              set: {
+                nombre: item.nombre,
+                descripcion: item.descripcion,
+                categoria: item.categoria,
+                precio: item.precio,
+                stockActual: item.stockActual,
+                activo: item.activo,
+              },
+            });
+        }
+        return items.length;
+      } catch (err) {
+        console.error("Error en createProductosBatch en Neon:", err);
+      }
+    }
+
+    // Fallback local
+    for (const item of items) {
+      const idx = mockProductos.findIndex((p) => p.codigoSku.toUpperCase() === item.codigoSku.toUpperCase());
+      if (idx >= 0) {
+        mockProductos[idx] = {
+          ...mockProductos[idx],
+          ...item,
+        };
+      } else {
+        mockProductos.unshift({
+          id: "p-" + Date.now() + "-" + Math.random().toString(36).substring(2, 5),
+          ...item,
+          creadoEn: new Date(),
+        });
+      }
+    }
+    return items.length;
+  },
+
   // COMPRAS
   async getCompras(): Promise<CompraCompleta[]> {
     const db = getDb();
