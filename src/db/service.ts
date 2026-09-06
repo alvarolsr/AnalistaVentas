@@ -23,6 +23,7 @@ let mockClientes: Cliente[] = [
   {
     id: "c1-techcorp",
     nombre: "Carlos Mendoza",
+    rif: "J-40192837-1",
     email: "cmendoza@techcorp.com",
     telefono: "+58 412 555-0101",
     empresa: "TechCorp Solutions",
@@ -33,6 +34,7 @@ let mockClientes: Cliente[] = [
   {
     id: "c2-distnorte",
     nombre: "Mariana López",
+    rif: "J-30819274-5",
     email: "mlopez@distnorte.com",
     telefono: "+58 414 789-2233",
     empresa: "Distribuidora del Norte",
@@ -43,6 +45,7 @@ let mockClientes: Cliente[] = [
   {
     id: "c3-andinos",
     nombre: "Jorge Ramírez",
+    rif: "J-50123984-2",
     email: "jramirez@andinos.com",
     telefono: "+58 424 991-8844",
     empresa: "Supermercados Andinos C.A.",
@@ -53,6 +56,7 @@ let mockClientes: Cliente[] = [
   {
     id: "c4-apex",
     nombre: "Valeria Soto",
+    rif: "J-29837461-8",
     email: "vsoto@consultoraapex.com",
     telefono: "+58 416 333-7722",
     empresa: "Consultora Apex",
@@ -63,6 +67,7 @@ let mockClientes: Cliente[] = [
   {
     id: "c5-innova",
     nombre: "Gabriel Herrera",
+    rif: "V-18765432-0",
     email: "gherrera@innovaretail.com",
     telefono: "+58 412 112-9900",
     empresa: "Innova Retail",

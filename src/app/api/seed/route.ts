@@ -27,6 +27,7 @@ export async function POST() {
       CREATE TABLE IF NOT EXISTS clientes (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         nombre VARCHAR(255) NOT NULL,
+        rif VARCHAR(50),
         email VARCHAR(255) UNIQUE NOT NULL,
         telefono VARCHAR(50),
         empresa VARCHAR(255),
@@ -34,6 +35,8 @@ export async function POST() {
         notas TEXT,
         creado_en TIMESTAMPTZ DEFAULT NOW() NOT NULL
       );
+
+      ALTER TABLE clientes ADD COLUMN IF NOT EXISTS rif VARCHAR(50);
 
       CREATE TABLE IF NOT EXISTS productos (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

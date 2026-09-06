@@ -4,6 +4,7 @@ import { relations } from "drizzle-orm";
 export const clientes = pgTable("clientes", {
   id: uuid("id").defaultRandom().primaryKey(),
   nombre: varchar("nombre", { length: 255 }).notNull(),
+  rif: varchar("rif", { length: 50 }),
   email: varchar("email", { length: 255 }).notNull().unique(),
   telefono: varchar("telefono", { length: 50 }),
   empresa: varchar("empresa", { length: 255 }),

@@ -21,6 +21,7 @@ export async function POST(req: Request) {
 
     const nuevoCliente = await DataService.createCliente({
       nombre: body.nombre.trim(),
+      rif: body.rif ? body.rif.trim().toUpperCase() : null,
       email: body.email.trim(),
       telefono: body.telefono ? body.telefono.trim() : null,
       empresa: body.empresa ? body.empresa.trim() : null,

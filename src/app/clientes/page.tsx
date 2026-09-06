@@ -26,6 +26,7 @@ export default function ClientesPage() {
   // Form State
   const [form, setForm] = useState({
     nombre: "",
+    rif: "",
     email: "",
     telefono: "",
     empresa: "",
@@ -64,6 +65,7 @@ export default function ClientesPage() {
         setIsModalOpen(false);
         setForm({
           nombre: "",
+          rif: "",
           email: "",
           telefono: "",
           empresa: "",
@@ -103,6 +105,7 @@ export default function ClientesPage() {
   const clientesFiltrados = clientes.filter(
     (c) =>
       c.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
+      (c.rif && c.rif.toLowerCase().includes(filtro.toLowerCase())) ||
       c.email.toLowerCase().includes(filtro.toLowerCase()) ||
       (c.empresa && c.empresa.toLowerCase().includes(filtro.toLowerCase()))
   );
@@ -142,7 +145,7 @@ export default function ClientesPage() {
         <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
         <input
           type="text"
-          placeholder="Buscar por nombre, correo o empresa..."
+          placeholder="Buscar por nombre, RIF, correo o empresa..."
           value={filtro}
           onChange={(e) => setFiltro(e.target.value)}
           className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
@@ -176,7 +179,14 @@ export default function ClientesPage() {
                         .join("")}
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">{cliente.nombre}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-slate-900">{cliente.nombre}</h3>
+                        {cliente.rif && (
+                          <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 font-mono text-[10px] font-bold rounded border border-blue-200">
+                            {cliente.rif}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                         <Building className="w-3 h-3 text-slate-400" />
                         <span>{cliente.empresa || "Cliente Particular"}</span>
@@ -243,18 +253,32 @@ export default function ClientesPage() {
             </div>
 
             <form onSubmit={handleCrearCliente} className="mt-4 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nombre Completo *
-                </label>
-                <input
-                  required
-                  type="text"
-                  placeholder="Ej: Carlos Mendoza"
-                  value={form.nombre}
-                  onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Nombre Completo *
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="Ej: Carlos Mendoza"
+                    value={form.nombre}
+                    onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    RIF / Identificación Fiscal
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: J-12345678-9 o V-12345678-0"
+                    value={form.rif}
+                    onChange={(e) => setForm({ ...form, rif: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm uppercase font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

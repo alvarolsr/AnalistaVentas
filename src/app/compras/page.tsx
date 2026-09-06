@@ -349,7 +349,7 @@ export default function ComprasPage() {
                   <option value="">-- Seleccionar Cliente --</option>
                   {clientes.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.nombre} {c.empresa ? `(${c.empresa})` : ""} - {c.email}
+                      {c.nombre} {c.rif ? `[${c.rif}]` : ""} {c.empresa ? `(${c.empresa})` : ""} - {c.email}
                     </option>
                   ))}
                 </select>
