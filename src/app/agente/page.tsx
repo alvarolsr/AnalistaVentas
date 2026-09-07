@@ -15,13 +15,27 @@ import {
   TrendingUp,
   Package,
   Users,
-  AlertCircle
+  AlertCircle,
+  Paperclip,
+  FileText,
+  X
 } from "lucide-react";
+
+interface ArchivoAdjunto {
+  nombre: string;
+  tipo: string;
+  base64: string;
+  tamaño?: string;
+}
 
 interface Mensaje {
   id: string;
   role: "user" | "assistant";
   content: string;
+  adjunto?: {
+    nombre: string;
+    tipo: string;
+  };
   timestamp: string;
 }
 
@@ -49,6 +63,10 @@ export default function AgenteChatPage() {
   const [indicaciones, setIndicaciones] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [guardadoExitoso, setGuardadoExitoso] = useState(false);
+
+  // Archivo Adjunto en el Chat
+  const [archivoAdjunto, setArchivoAdjunto] = useState<ArchivoAdjunto | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -137,19 +155,57 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
     setTimeout(() => setCopiadoId(null), 2000);
   };
 
+  const handleSeleccionarArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Límite de 10 MB para inline base64
+    if (file.size > 10 * 1024 * 1024) {
+      alert("El archivo no debe superar los 10 MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64String = reader.result as string;
+      const sizeKb = Math.round(file.size / 1024);
+      const sizeText = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+
+      setArchivoAdjunto({
+        nombre: file.name,
+        tipo: file.type || "application/octet-stream",
+        base64: base64String,
+        tamaño: sizeText,
+      });
+    };
+    reader.readAsDataURL(file);
+    // Reset file input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const enviarMensaje = async (texto: string) => {
-    if (!texto.trim() || cargando) return;
+    if ((!texto.trim() && !archivoAdjunto) || cargando) return;
+
+    const textoEnvio = texto.trim() || (archivoAdjunto ? `Analiza el documento adjunto: ${archivoAdjunto.nombre}` : "");
+    const adjuntoActual = archivoAdjunto;
 
     const nuevoMensajeUsuario: Mensaje = {
       id: `user-${Date.now()}`,
       role: "user",
-      content: texto.trim(),
+      content: textoEnvio,
+      adjunto: adjuntoActual
+        ? {
+            nombre: adjuntoActual.nombre,
+            tipo: adjuntoActual.tipo,
+          }
+        : undefined,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
     const nuevosMensajes = [...mensajes, nuevoMensajeUsuario];
     setMensajes(nuevosMensajes);
     setInput("");
+    setArchivoAdjunto(null);
     setCargando(true);
 
     try {
@@ -163,9 +219,16 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mensaje: texto.trim(),
+          mensaje: textoEnvio,
           historial: historialPayload.slice(-8),
           indicacionesPersonalizadas: indicaciones,
+          adjunto: adjuntoActual
+            ? {
+                nombre: adjuntoActual.nombre,
+                tipo: adjuntoActual.tipo,
+                base64: adjuntoActual.base64,
+              }
+            : undefined,
           apiKey: apiKey.trim() || undefined,
         }),
       });
@@ -269,6 +332,21 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
               </div>
 
               <div className="space-y-1 max-w-[85%]">
+                {/* Indicador visual de archivo adjunto en el mensaje */}
+                {msg.adjunto && (
+                  <div
+                    className={`flex items-center gap-2 p-2 rounded-xl mb-1 text-xs border ${
+                      esUsuario
+                        ? "bg-blue-700/80 text-white border-blue-500"
+                        : "bg-slate-100 text-slate-700 border-slate-200"
+                    }`}
+                  >
+                    <FileText className="w-4 h-4 shrink-0" />
+                    <span className="font-semibold truncate max-w-xs">{msg.adjunto.nombre}</span>
+                    <span className="text-[10px] opacity-75 uppercase">({msg.adjunto.tipo.split("/")[1] || "archivo"})</span>
+                  </div>
+                )}
+
                 <div
                   className={`p-4 rounded-2xl shadow-xs text-sm leading-relaxed whitespace-pre-wrap ${
                     esUsuario
@@ -332,27 +410,75 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
         </div>
       )}
 
-      {/* Input de Envío */}
-      <div className="p-4 bg-white border-t border-slate-200 shrink-0">
+      {/* Input de Envío y Botón de Adjuntar */}
+      <div className="p-4 bg-white border-t border-slate-200 shrink-0 space-y-2">
+        {/* Vista previa del archivo listo para enviar */}
+        {archivoAdjunto && (
+          <div className="flex items-center justify-between bg-indigo-50 border border-indigo-200 px-3.5 py-2 rounded-xl text-xs text-indigo-900 animate-fade-in">
+            <div className="flex items-center gap-2.5 truncate">
+              <div className="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg">
+                <FileText className="w-4 h-4" />
+              </div>
+              <div className="truncate">
+                <p className="font-semibold truncate">{archivoAdjunto.nombre}</p>
+                <p className="text-[10px] text-indigo-600">{archivoAdjunto.tamaño} • Listo para analizar con Gemini</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setArchivoAdjunto(null)}
+              className="text-indigo-400 hover:text-rose-600 p-1 transition"
+              title="Quitar archivo"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
             enviarMensaje(input);
           }}
-          className="flex items-center gap-3"
+          className="flex items-center gap-2"
         >
+          {/* Input oculto de archivos */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.webp,.csv,.txt"
+            onChange={handleSeleccionarArchivo}
+            className="hidden"
+          />
+
+          {/* Botón Adjuntar Archivo */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={cargando}
+            title="Adjuntar archivo (PDF, Imagen, CSV, Texto)"
+            className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition disabled:opacity-40 shrink-0 flex items-center justify-center"
+          >
+            <Paperclip className="w-4 h-4" />
+          </button>
+
           <input
             type="text"
-            placeholder="Pregúntale al Agente sobre clientes, marcas, inventario o estrategias de venta..."
+            placeholder={
+              archivoAdjunto
+                ? `Añade instrucciones para ${archivoAdjunto.nombre} o pulsa Enviar...`
+                : "Pregúntale al Agente o adjunta un archivo (PDF, factura, cotización, lista de precios)..."
+            }
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={cargando}
             className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition"
           />
+
           <button
             type="submit"
-            disabled={!input.trim() || cargando}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 text-white font-semibold px-5 py-3 rounded-xl shadow-sm transition flex items-center gap-2"
+            disabled={(!input.trim() && !archivoAdjunto) || cargando}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 text-white font-semibold px-5 py-3 rounded-xl shadow-sm transition flex items-center gap-2 shrink-0"
           >
             <span>Enviar</span>
             <Send className="w-4 h-4" />

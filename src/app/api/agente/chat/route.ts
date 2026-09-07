@@ -9,6 +9,12 @@ export interface MensajeChat {
   content: string;
 }
 
+export interface AdjuntoChat {
+  nombre: string;
+  tipo: string; // mime type
+  base64: string;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -16,12 +22,13 @@ export async function POST(req: Request) {
       mensaje,
       historial = [],
       indicacionesPersonalizadas = "",
+      adjunto, // opcional: { nombre, tipo, base64 }
       apiKey: apiKeyCustom,
     } = body;
 
-    if (!mensaje || typeof mensaje !== "string") {
+    if ((!mensaje || typeof mensaje !== "string") && !adjunto) {
       return NextResponse.json(
-        { error: "Se requiere un mensaje válido" },
+        { error: "Se requiere un mensaje de texto o un archivo adjunto válido." },
         { status: 400 }
       );
     }
@@ -148,10 +155,33 @@ REGLAS DE RESPUESTA:
       }
     }
 
-    // Agregar el mensaje actual del usuario
+    // Preparar el mensaje actual del usuario (texto + archivo adjunto si existe)
+    const userParts: any[] = [];
+
+    if (adjunto && adjunto.base64) {
+      // Limpiar prefijo data:mime;base64, si viene incluido
+      let pureBase64 = adjunto.base64;
+      if (pureBase64.includes(",")) {
+        pureBase64 = pureBase64.split(",")[1];
+      }
+
+      userParts.push({
+        inlineData: {
+          data: pureBase64,
+          mimeType: adjunto.tipo || "application/pdf",
+        },
+      });
+
+      userParts.push({
+        text: `[Archivo adjuntado por el usuario: "${adjunto.nombre}"]\n${mensaje || "Por favor analiza este documento o imagen y responde a mis requerimientos."}`,
+      });
+    } else {
+      userParts.push({ text: mensaje });
+    }
+
     contents.push({
       role: "user",
-      parts: [{ text: mensaje }],
+      parts: userParts,
     });
 
     let response;
