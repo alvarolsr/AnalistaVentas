@@ -8,7 +8,9 @@ import {
   Package, 
   ShoppingCart, 
   Database,
-  TrendingUp
+  TrendingUp,
+  Bot,
+  Sparkles
 } from "lucide-react";
 
 export function Sidebar() {
@@ -20,6 +22,13 @@ export function Sidebar() {
       label: "Dashboard Analista",
       icon: BarChart3,
       description: "KPIs y métricas de venta",
+    },
+    {
+      href: "/agente",
+      label: "Agente Analista AI",
+      icon: Bot,
+      description: "Chat y consultoría comercial",
+      badge: "Gemini",
     },
     {
       href: "/clientes",
@@ -75,8 +84,15 @@ export function Sidebar() {
               }`}
             >
               <Icon className={`w-5 h-5 ${isActive ? "text-white" : "text-slate-400"}`} />
-              <div className="flex flex-col">
-                <span>{link.label}</span>
+              <div className="flex flex-col flex-1">
+                <div className="flex items-center justify-between">
+                  <span>{link.label}</span>
+                  {link.badge && (
+                    <span className="text-[10px] bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                      {link.badge}
+                    </span>
+                  )}
+                </div>
                 <span className={`text-[11px] font-normal ${isActive ? "text-blue-100" : "text-slate-500"}`}>
                   {link.description}
                 </span>
