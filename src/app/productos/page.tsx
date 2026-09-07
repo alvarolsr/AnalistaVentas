@@ -14,7 +14,9 @@ import {
   Trash2,
   Sparkles,
   RefreshCw,
-  Edit3
+  Edit3,
+  Bot,
+  Key
 } from "lucide-react";
 import { type Producto } from "@/db/schema";
 
@@ -47,6 +49,9 @@ export default function ProductosPage() {
   const [productosExtraidos, setProductosExtraidos] = useState<ProductoExtraido[]>([]);
   const [guardandoBatch, setGuardandoBatch] = useState(false);
   const [errorPdf, setErrorPdf] = useState<string | null>(null);
+  const [motorUtilizado, setMotorUtilizado] = useState<"gemini" | "heuristico" | null>(null);
+  const [apiKeyGemini, setApiKeyGemini] = useState<string>("");
+  const [mostrarConfigApiKey, setMostrarConfigApiKey] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State para nuevo producto individual
@@ -123,9 +128,13 @@ export default function ProductosPage() {
     setPdfFile(file);
     setProcesandoPdf(true);
     setErrorPdf(null);
+    setMotorUtilizado(null);
 
     const formData = new FormData();
     formData.append("pdf", file);
+    if (apiKeyGemini.trim()) {
+      formData.append("apiKey", apiKeyGemini.trim());
+    }
 
     try {
       const res = await fetch("/api/productos/importar-pdf", {
@@ -143,6 +152,7 @@ export default function ProductosPage() {
       if (res.ok) {
         if (data.productos && data.productos.length > 0) {
           setProductosExtraidos(data.productos);
+          setMotorUtilizado(data.motor || "heuristico");
         } else {
           setErrorPdf("No se detectaron filas de productos con precios en el PDF. Intenta con una lista de precios o catálogo con precios visibles.");
         }
@@ -400,6 +410,65 @@ export default function ProductosPage() {
               {/* Zona de Carga si no hay productos extraídos aún */}
               {productosExtraidos.length === 0 && (
                 <div className="space-y-4">
+                  {/* Banner Agente Gemini AI */}
+                  <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2.5 bg-gradient-to-tr from-purple-600 to-indigo-600 text-white rounded-xl shadow-sm shadow-indigo-500/20 shrink-0">
+                        <Bot className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xs font-bold text-slate-900">
+                            Agente Gemini AI Multimodal
+                          </h3>
+                          <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-extrabold rounded-full uppercase">
+                            Inteligente
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 mt-0.5">
+                          Identifica visualmente categorías, marcas, códigos SKU y precios exactos en catálogos y listas complejas.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setMostrarConfigApiKey(!mostrarConfigApiKey)}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1.5 self-start sm:self-auto shrink-0 bg-white/80 hover:bg-white border border-indigo-200/80 px-3 py-1.5 rounded-lg transition"
+                    >
+                      <Key className="w-3.5 h-3.5" />
+                      <span>{apiKeyGemini ? "API Key activa" : "Configurar API Key"}</span>
+                    </button>
+                  </div>
+
+                  {/* Input opcional para API Key si no está en .env */}
+                  {mostrarConfigApiKey && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs animate-fade-in">
+                      <label className="block font-semibold text-slate-700">
+                        Google Gemini API Key (Opcional si ya está en .env.local):
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="password"
+                          placeholder="AIzaSy..."
+                          value={apiKeyGemini}
+                          onChange={(e) => setApiKeyGemini(e.target.value)}
+                          className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setMostrarConfigApiKey(false)}
+                          className="px-3 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+                        >
+                          Aplicar
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-slate-400">
+                        Si tienes `GEMINI_API_KEY` en tu archivo `.env.local` o variables de Vercel, el servidor la detectará automáticamente.
+                      </p>
+                    </div>
+                  )}
+
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     onDragOver={(e) => e.preventDefault()}
@@ -423,12 +492,12 @@ export default function ProductosPage() {
 
                     {procesandoPdf ? (
                       <div className="flex flex-col items-center gap-3 py-4">
-                        <RefreshCw className="w-10 h-10 text-blue-600 animate-spin" />
+                        <RefreshCw className="w-10 h-10 text-indigo-600 animate-spin" />
                         <p className="text-sm font-bold text-slate-800">
-                          Analizando documento y extrayendo productos...
+                          Agente Gemini analizando documento PDF...
                         </p>
-                        <p className="text-xs text-slate-400">
-                          Leyendo tablas, identificando códigos SKU, nombres y precios.
+                        <p className="text-xs text-slate-400 max-w-sm">
+                          Detectando jerarquías visuales, agrupaciones por categoría, marcas, códigos SKU y precios unitarios.
                         </p>
                       </div>
                     ) : (
@@ -458,10 +527,10 @@ export default function ProductosPage() {
                   <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1.5">
                     <p className="font-semibold text-slate-700 flex items-center gap-1.5">
                       <Sparkles className="w-4 h-4 text-amber-500" />
-                      <span>¿Cómo funciona la extracción automática?</span>
+                      <span>¿Cómo funciona la extracción inteligente?</span>
                     </p>
                     <p className="text-slate-500 leading-relaxed">
-                      El sistema analiza el contenido del PDF reconociendo columnas de SKU, descripción, precios en cualquier divisa ($ o Bs) y cantidades. Antes de guardar, podrás revisar cada ítem en una tabla de confirmación.
+                      El Agente Gemini analiza la disposición y maquetación de cada página, deduciendo qué productos pertenecen a cada familia o sublínea (ej. Servidores, Redes, Laptops), reconociendo la marca y aislando códigos SKU auténticos. Si no hay conexión con IA, la aplicación activa un respaldo heurístico para que nunca te quedes sin procesar tu archivo.
                     </p>
                   </div>
                 </div>
@@ -472,13 +541,27 @@ export default function ProductosPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between bg-blue-50 border border-blue-200 p-3.5 rounded-xl">
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                      <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0" />
                       <div>
-                        <p className="text-xs font-bold text-blue-900">
-                          Se detectaron {productosExtraidos.length} productos en "{pdfFile?.name}"
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-blue-900">
+                            Se detectaron {productosExtraidos.length} productos en "{pdfFile?.name}"
+                          </p>
+                          {motorUtilizado === "gemini" ? (
+                            <span className="px-2 py-0.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center gap-1 shadow-xs">
+                              <Bot className="w-3 h-3" />
+                              <span>Gemini AI</span>
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 bg-slate-200 text-slate-700 text-[10px] font-semibold rounded-full">
+                              Motor Heurístico
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] text-blue-700">
-                          Verifica o ajusta los valores directamente en la tabla antes de sincronizar con Neon.
+                          {motorUtilizado === "gemini"
+                            ? "Categorías, SKUs y marcas estructurados con precisión por el Agente Gemini. Puedes afinar cualquier dato antes de guardar."
+                            : "Verifica o ajusta los valores directamente en la tabla antes de sincronizar con Neon."}
                         </p>
                       </div>
                     </div>
@@ -486,8 +569,9 @@ export default function ProductosPage() {
                       onClick={() => {
                         setProductosExtraidos([]);
                         setPdfFile(null);
+                        setMotorUtilizado(null);
                       }}
-                      className="text-xs text-blue-700 hover:text-blue-900 font-semibold underline"
+                      className="text-xs text-blue-700 hover:text-blue-900 font-semibold underline shrink-0"
                     >
                       Subir otro archivo
                     </button>

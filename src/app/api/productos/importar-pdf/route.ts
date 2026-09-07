@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { extractText } from "unpdf";
+import { extraerProductosConGemini } from "./geminiAgent";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,8 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get("pdf") as File | null;
+    const apiKeyCustom = (formData.get("apiKey") as string | null) || undefined;
+    const modoFuerza = (formData.get("modo") as string | null) || "auto"; // "gemini", "heuristico", "auto"
 
     if (!file) {
       return NextResponse.json({ error: "No se proporcionó ningún archivo PDF" }, { status: 400 });
@@ -26,7 +29,47 @@ export async function POST(req: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
-    // 1. Extraer texto del PDF con unpdf
+    // Determinar si tenemos clave para Gemini
+    const hasGeminiKey = Boolean(
+      apiKeyCustom ||
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY ||
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY
+    );
+
+    // Intentar procesamiento con Agente Gemini si está habilitado
+    if (modoFuerza !== "heuristico" && hasGeminiKey) {
+      try {
+        console.log(`[Gemini Agent] Analizando ${file.name} con Gemini...`);
+        const productosGemini = await extraerProductosConGemini({
+          pdfBuffer: uint8Array,
+          fileName: file.name,
+          apiKey: apiKeyCustom,
+        });
+
+        if (productosGemini && productosGemini.length > 0) {
+          return NextResponse.json({
+            success: true,
+            motor: "gemini",
+            archivo: file.name,
+            totalDetectados: productosGemini.length,
+            productos: productosGemini,
+            mensaje: `El Agente Gemini identificó ${productosGemini.length} productos y sus categorías exitosamente.`,
+          });
+        }
+      } catch (geminiError: any) {
+        console.warn("[Gemini Agent] Error o límite en Gemini, activando fallback heurístico:", geminiError.message);
+        // Si el usuario forzó explícitamente modo "gemini", devolvemos el error directo
+        if (modoFuerza === "gemini") {
+          return NextResponse.json(
+            { error: `Error en el Agente Gemini: ${geminiError.message || "No se pudo procesar con Gemini"}` },
+            { status: 500 }
+          );
+        }
+      }
+    }
+
+    // Fallback: Extracción Heurística con unpdf
     let rawText = "";
     let numPages = 1;
 
@@ -49,7 +92,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Extraer productos del texto del catálogo
+    // 2. Extraer productos del texto del catálogo con heurísticas
     const productosExtraidos: ProductoExtraido[] = [];
     const lines = rawText
       .split(/\r?\n/)
@@ -187,6 +230,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
+      motor: "heuristico",
       archivo: file.name,
       paginas: numPages,
       totalDetectados: productosExtraidos.length,
