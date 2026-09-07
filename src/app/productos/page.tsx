@@ -130,20 +130,25 @@ export default function ProductosPage() {
         body: formData,
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        throw new Error("El servidor no pudo procesar el documento PDF.");
+      }
 
       if (res.ok) {
         if (data.productos && data.productos.length > 0) {
           setProductosExtraidos(data.productos);
         } else {
-          setErrorPdf("No se detectaron filas de productos con precios en el PDF. Intenta con una lista de precios o catálogo estructurado.");
+          setErrorPdf("No se detectaron filas de productos con precios en el PDF. Intenta con una lista de precios o catálogo con precios visibles.");
         }
       } else {
-        setErrorPdf(data.error || "Error al leer el archivo PDF.");
+        setErrorPdf(data.error || "Error al procesar el archivo PDF.");
       }
     } catch (err: any) {
       console.error(err);
-      setErrorPdf("Ocurrió un error en la conexión al procesar el PDF.");
+      setErrorPdf(err.message || "Ocurrió un error al procesar el PDF.");
     } finally {
       setProcesandoPdf(false);
     }

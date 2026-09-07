@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-// @ts-ignore
-import { PDFParse } from "pdf-parse";
+import { extractText } from "unpdf";
 
 export const dynamic = "force-dynamic";
 
@@ -24,23 +23,27 @@ export async function POST(req: Request) {
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const uint8Array = new Uint8Array(arrayBuffer);
 
-    // 1. Extraer texto del PDF con PDFParse
+    // 1. Extraer texto del PDF con unpdf
     let rawText = "";
     let numPages = 1;
-    const parser = new PDFParse({ data: buffer });
+
     try {
-      const textResult = await parser.getText();
-      rawText = typeof textResult === "string" ? textResult : (textResult?.text || "");
-      if (textResult?.total) numPages = textResult.total;
-    } finally {
-      await parser.destroy();
+      const extracted = await extractText(uint8Array);
+      numPages = extracted.totalPages || 1;
+      rawText = Array.isArray(extracted.text) ? extracted.text.join("\n") : (extracted.text || "");
+    } catch (pdfErr: any) {
+      console.error("Error en extractText:", pdfErr);
+      return NextResponse.json(
+        { error: `No se pudo leer el archivo PDF: ${pdfErr.message || "Estructura no válida"}` },
+        { status: 400 }
+      );
     }
 
-    if (!rawText.trim()) {
+    if (!rawText || !rawText.trim()) {
       return NextResponse.json(
-        { error: "No se pudo extraer texto legible del PDF. Es posible que sea un documento escaneado solo como imagen." },
+        { error: "No se encontró texto legible en el PDF. Si es un documento escaneado como imagen (foto), asegúrate de que contenga texto seleccionable." },
         { status: 400 }
       );
     }
@@ -50,9 +53,9 @@ export async function POST(req: Request) {
     const lines = rawText
       .split(/\r?\n/)
       .map((l) => l.trim())
-      .filter((l) => l.length > 3);
+      .filter((l) => l.length > 2);
 
-    // Palabras reservadas que no son productos (cabeceras, pies de página, totales)
+    // Palabras a ignorar (cabeceras, totales, pies de página)
     const ignorar = [
       "total", "subtotal", "iva", "página", "pagina", "page", "fecha", "cliente",
       "factura", "rif", "telefono", "dirección", "direccion", "condiciones",
@@ -66,9 +69,11 @@ export async function POST(req: Request) {
       { clave: "servidor", cat: "Infraestructura" },
       { clave: "rack", cat: "Infraestructura" },
       { clave: "monitor", cat: "Periféricos" },
+      { clave: "pantalla", cat: "Periféricos" },
       { clave: "teclado", cat: "Periféricos" },
       { clave: "mouse", cat: "Periféricos" },
       { clave: "auricular", cat: "Audio" },
+      { clave: "corneta", cat: "Audio" },
       { clave: "cable", cat: "Accesorios" },
       { clave: "switch", cat: "Redes" },
       { clave: "router", cat: "Redes" },
@@ -78,26 +83,41 @@ export async function POST(req: Request) {
 
     let contadorSku = 1;
 
-    for (const line of lines) {
-      const lower = line.toLowerCase();
+    for (let rawLine of lines) {
+      const lower = rawLine.toLowerCase();
       // Descartar cabeceras comunes
       if (ignorar.some((w) => lower.startsWith(w) || lower === w)) {
         continue;
       }
 
-      // Buscar si la línea tiene un precio (ej: $120.00, 150,00, 1,250.00, etc.)
-      const priceRegex = /(?:\$|usd|bs\.?)?\s*([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{2})|[0-9]+(?:[.,][0-9]{2})?)\s*(?:\$|usd|bs\.?)?/gi;
-      const matches = Array.from(line.matchAll(priceRegex));
+      // 1. Extraer stock explícito (ej: "5 unid", "12 pcs", "stock: 20")
+      let stock = 10;
+      const stockExplicitMatch = rawLine.match(/\b([0-9]{1,4})\s*(?:unid|uds|piezas|pcs|unidades)\b/i);
+      if (stockExplicitMatch && stockExplicitMatch[1]) {
+        stock = parseInt(stockExplicitMatch[1], 10);
+        rawLine = rawLine.replace(stockExplicitMatch[0], " ").trim();
+      }
 
-      if (matches.length > 0) {
-        // Tomar el último match como precio probable (las columnas de precio suelen estar al final)
-        const lastMatch = matches[matches.length - 1];
+      // 2. Buscar patrón de precio (con decimales o símbolo de moneda)
+      const priceRegexWithDecimals = /(?:\$|usd|bs\.?|€)?\s*([0-9]{1,3}(?:[.,][0-9]{3})*[.,][0-9]{2})\s*(?:\$|usd|bs\.?|€)?/gi;
+      let priceMatches = Array.from(rawLine.matchAll(priceRegexWithDecimals));
+
+      if (priceMatches.length === 0) {
+        const priceRegexWithCurrency = /(?:\$|usd|bs\.?|€)\s*([0-9]+(?:\.[0-9]{1,2})?)/gi;
+        priceMatches = Array.from(rawLine.matchAll(priceRegexWithCurrency));
+      }
+      if (priceMatches.length === 0) {
+        const priceRegexEndNumber = /\b([0-9]+(?:[.,][0-9]{2})?)\s*$/gi;
+        priceMatches = Array.from(rawLine.matchAll(priceRegexEndNumber));
+      }
+
+      if (priceMatches.length > 0) {
+        const lastMatch = priceMatches[priceMatches.length - 1];
         const rawPrice = lastMatch[1];
-        
-        // Normalizar precio a decimal (remplazar comas decimales o puntos de miles)
-        let normalizedPrice = rawPrice.replace(/\./g, "").replace(",", ".");
+
+        // Normalizar precio a decimal estándar
+        let normalizedPrice = rawPrice;
         if (rawPrice.includes(".") && rawPrice.includes(",")) {
-          // formato 1.250,50
           normalizedPrice = rawPrice.replace(/\./g, "").replace(",", ".");
         } else if (rawPrice.includes(",") && !rawPrice.includes(".")) {
           normalizedPrice = rawPrice.replace(",", ".");
@@ -106,18 +126,18 @@ export async function POST(req: Request) {
         const precioNum = parseFloat(normalizedPrice);
         if (isNaN(precioNum) || precioNum <= 0) continue;
 
-        // Extraer texto previo al precio
-        let nameAndSku = line.substring(0, lastMatch.index).trim();
-        if (!nameAndSku || nameAndSku.length < 3) continue;
+        // Extraer texto previo o posterior al precio como nombre/sku
+        let nameAndSku = rawLine.replace(lastMatch[0], " ").trim();
+        if (!nameAndSku || nameAndSku.length < 2) continue;
 
-        // Detectar SKU al inicio (ej: PROD-01, #1234, SKU123, o palabra en mayúsculas/números)
+        // Detectar SKU al inicio
         const tokens = nameAndSku.split(/\s+/);
         let sku = "";
         let nombre = nameAndSku;
 
         if (tokens.length > 1) {
           const firstToken = tokens[0].replace(/^[#:\-\/]/, "");
-          if (/^[A-Z0-9_\-]{3,15}$/i.test(firstToken)) {
+          if (/^[A-Z0-9_\-]{2,15}$/i.test(firstToken) && /[A-Z0-9]/i.test(firstToken)) {
             sku = firstToken.toUpperCase();
             nombre = tokens.slice(1).join(" ");
           }
@@ -128,7 +148,7 @@ export async function POST(req: Request) {
           contadorSku++;
         }
 
-        // Inferir categoría
+        // Categoría inferida
         let categoria = "General";
         for (const c of categoriasComunes) {
           if (nombre.toLowerCase().includes(c.clave)) {
@@ -137,19 +157,11 @@ export async function POST(req: Request) {
           }
         }
 
-        // Detectar si hay un número pequeño que represente stock
-        let stock = 10; // default
-        const stockMatch = line.match(/\b([1-9][0-9]?)\s*(?:unid|uds|piezas|pcs)?\b/i);
-        if (stockMatch && stockMatch[1] && stockMatch.index !== lastMatch.index) {
-          const s = parseInt(stockMatch[1], 10);
-          if (s > 0 && s < 1000) stock = s;
-        }
-
         productosExtraidos.push({
           idTemp: `temp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           codigoSku: sku,
           nombre: nombre.replace(/[|;,\-]$/, "").trim(),
-          descripcion: `Importado automáticamente desde ${file.name}`,
+          descripcion: `Importado de ${file.name}`,
           categoria,
           precio: precioNum.toFixed(2),
           stockActual: stock,
@@ -163,12 +175,12 @@ export async function POST(req: Request) {
       paginas: numPages,
       totalDetectados: productosExtraidos.length,
       productos: productosExtraidos,
-      resumenTexto: rawText.substring(0, 500) + (rawText.length > 500 ? "..." : ""),
+      resumenTexto: rawText.substring(0, 300) + (rawText.length > 300 ? "..." : ""),
     });
   } catch (error: any) {
     console.error("Error al procesar PDF:", error);
     return NextResponse.json(
-      { error: error.message || "Error al procesar el archivo PDF" },
+      { error: error.message || "Error inesperado al procesar el archivo PDF" },
       { status: 500 }
     );
   }
