@@ -187,7 +187,7 @@ REGLAS DE RESPUESTA:
     let response;
     try {
       response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-3.8-flash",
         contents,
         config: {
           systemInstruction: {
@@ -195,18 +195,31 @@ REGLAS DE RESPUESTA:
           },
         },
       });
-    } catch (err36: any) {
-      console.warn("Fallo con gemini-3.6-flash en chat, reintentando con gemini-2.5-flash:", err36?.message);
-      response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents,
-        config: {
-          systemInstruction: {
-            parts: [{ text: systemInstruction }],
+    } catch (err38: any) {
+      console.warn("Fallo con gemini-3.8-flash en chat, reintentando con gemini-3.6-flash:", err38?.message);
+      try {
+        response = await ai.models.generateContent({
+          model: "gemini-3.6-flash",
+          contents,
+          config: {
+            systemInstruction: {
+              parts: [{ text: systemInstruction }],
+            },
           },
-          temperature: 0.3,
-        },
-      });
+        });
+      } catch (err36: any) {
+        console.warn("Fallo con gemini-3.6-flash en chat, reintentando con gemini-2.5-flash:", err36?.message);
+        response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents,
+          config: {
+            systemInstruction: {
+              parts: [{ text: systemInstruction }],
+            },
+            temperature: 0.3,
+          },
+        });
+      }
     }
 
     const respuestaTexto = response.text || "No se obtuvo respuesta del agente.";
