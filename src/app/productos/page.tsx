@@ -22,6 +22,7 @@ interface ProductoExtraido {
   idTemp: string;
   codigoSku: string;
   nombre: string;
+  marca?: string;
   descripcion: string;
   categoria: string;
   precio: string;
@@ -52,6 +53,7 @@ export default function ProductosPage() {
   const [form, setForm] = useState({
     codigoSku: "",
     nombre: "",
+    marca: "",
     descripcion: "",
     categoria: "Computación",
     precio: "",
@@ -90,6 +92,7 @@ export default function ProductosPage() {
         setForm({
           codigoSku: "",
           nombre: "",
+          marca: "",
           descripcion: "",
           categoria: "Computación",
           precio: "",
@@ -202,6 +205,7 @@ export default function ProductosPage() {
     const coincideTexto =
       p.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
       p.codigoSku.toLowerCase().includes(filtro.toLowerCase()) ||
+      (p.marca && p.marca.toLowerCase().includes(filtro.toLowerCase())) ||
       (p.descripcion && p.descripcion.toLowerCase().includes(filtro.toLowerCase()));
 
     const coincideCategoria =
@@ -271,7 +275,7 @@ export default function ProductosPage() {
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Buscar por SKU, nombre o descripción..."
+            placeholder="Buscar por SKU, nombre, marca o descripción..."
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
             className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600"
@@ -316,10 +320,17 @@ export default function ProductosPage() {
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="inline-flex items-center gap-1 bg-purple-50 text-purple-700 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border border-purple-100">
-                      <Tag className="w-3 h-3" />
-                      {producto.categoria}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1 bg-purple-50 text-purple-700 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border border-purple-100">
+                        <Tag className="w-3 h-3" />
+                        {producto.categoria}
+                      </span>
+                      {producto.marca && (
+                        <span className="inline-flex items-center bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md text-[11px] font-semibold border border-slate-200">
+                          {producto.marca}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-xs font-mono font-medium text-slate-400">
                       {producto.codigoSku}
                     </span>
@@ -490,6 +501,7 @@ export default function ProductosPage() {
                           <tr>
                             <th className="py-2.5 px-3">Código SKU</th>
                             <th className="py-2.5 px-3">Nombre del Producto</th>
+                            <th className="py-2.5 px-3">Marca</th>
                             <th className="py-2.5 px-3">Categoría</th>
                             <th className="py-2.5 px-3 w-28">Precio ($)</th>
                             <th className="py-2.5 px-3 w-20">Stock</th>
@@ -517,6 +529,17 @@ export default function ProductosPage() {
                                     handleActualizarFila(item.idTemp, "nombre", e.target.value)
                                   }
                                   className="w-full bg-white border border-slate-200 rounded px-2 py-1 font-medium text-slate-900"
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  placeholder="Marca"
+                                  value={item.marca || ""}
+                                  onChange={(e) =>
+                                    handleActualizarFila(item.idTemp, "marca", e.target.value)
+                                  }
+                                  className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 font-medium"
                                 />
                               </td>
                               <td className="py-2 px-3">
@@ -654,18 +677,32 @@ export default function ProductosPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nombre del Producto *
-                </label>
-                <input
-                  required
-                  type="text"
-                  placeholder="Ej: MacBook Pro 16 M3 Max"
-                  value={form.nombre}
-                  onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Nombre del Producto *
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="Ej: MacBook Pro 16 M3 Max"
+                    value={form.nombre}
+                    onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Marca / Fabricante
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Apple, HP, Dell..."
+                    value={form.marca}
+                    onChange={(e) => setForm({ ...form, marca: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600"
+                  />
+                </div>
               </div>
 
               <div>

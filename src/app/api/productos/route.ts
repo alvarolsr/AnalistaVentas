@@ -22,6 +22,7 @@ export async function POST(req: Request) {
     const nuevoProducto = await DataService.createProducto({
       codigoSku: body.codigoSku.trim().toUpperCase(),
       nombre: body.nombre.trim(),
+      marca: body.marca ? body.marca.trim() : null,
       descripcion: body.descripcion ? body.descripcion.trim() : null,
       categoria: body.categoria.trim(),
       precio: parseFloat(body.precio).toFixed(2),

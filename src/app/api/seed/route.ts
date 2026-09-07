@@ -42,6 +42,7 @@ export async function POST() {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         codigo_sku VARCHAR(100) UNIQUE NOT NULL,
         nombre VARCHAR(255) NOT NULL,
+        marca VARCHAR(100),
         descripcion TEXT,
         categoria VARCHAR(100) NOT NULL,
         precio NUMERIC(12,2) NOT NULL,
@@ -49,6 +50,8 @@ export async function POST() {
         activo BOOLEAN DEFAULT TRUE NOT NULL,
         creado_en TIMESTAMPTZ DEFAULT NOW() NOT NULL
       );
+
+      ALTER TABLE productos ADD COLUMN IF NOT EXISTS marca VARCHAR(100);
 
       CREATE TABLE IF NOT EXISTS compras (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

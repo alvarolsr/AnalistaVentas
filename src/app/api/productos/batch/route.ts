@@ -18,6 +18,7 @@ export async function POST(req: Request) {
     const formateados = productos.map((p: any, idx: number) => ({
       codigoSku: (p.codigoSku || `SKU-AUTO-${Date.now()}-${idx + 1}`).trim().toUpperCase(),
       nombre: (p.nombre || "Producto sin nombre").trim(),
+      marca: p.marca ? p.marca.trim() : null,
       descripcion: p.descripcion ? p.descripcion.trim() : null,
       categoria: (p.categoria || "General").trim(),
       precio: parseFloat(p.precio || 0).toFixed(2),

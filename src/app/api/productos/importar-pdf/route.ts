@@ -7,6 +7,7 @@ export interface ProductoExtraido {
   idTemp: string;
   codigoSku: string;
   nombre: string;
+  marca?: string;
   descripcion: string;
   categoria: string;
   precio: string;
@@ -157,10 +158,25 @@ export async function POST(req: Request) {
           }
         }
 
+        // Marca inferida
+        const marcasComunes = [
+          "HP", "Lenovo", "Dell", "Asus", "Acer", "Apple", "Samsung", "LG",
+          "Logitech", "TP-Link", "Cisco", "Kingston", "Corsair", "Epson",
+          "Canon", "Sony", "Xiaomi", "Huawei", "Intel", "AMD", "NVIDIA", "Microsoft"
+        ];
+        let marca = "";
+        for (const m of marcasComunes) {
+          if (new RegExp(`\\b${m}\\b`, "i").test(nombre)) {
+            marca = m;
+            break;
+          }
+        }
+
         productosExtraidos.push({
           idTemp: `temp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           codigoSku: sku,
           nombre: nombre.replace(/[|;,\-]$/, "").trim(),
+          marca: marca || undefined,
           descripcion: `Importado de ${file.name}`,
           categoria,
           precio: precioNum.toFixed(2),

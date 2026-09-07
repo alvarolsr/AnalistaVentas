@@ -17,6 +17,7 @@ export const productos = pgTable("productos", {
   id: uuid("id").defaultRandom().primaryKey(),
   codigoSku: varchar("codigo_sku", { length: 100 }).notNull().unique(),
   nombre: varchar("nombre", { length: 255 }).notNull(),
+  marca: varchar("marca", { length: 100 }),
   descripcion: text("descripcion"),
   categoria: varchar("categoria", { length: 100 }).notNull(),
   precio: numeric("precio", { precision: 12, scale: 2 }).notNull(),
