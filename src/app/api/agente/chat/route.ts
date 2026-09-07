@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { DataService } from "@/db/service";
 
@@ -130,7 +130,7 @@ REGLAS DE RESPUESTA:
 - Emplea formato Markdown con negritas, listas o tablas cuando ayude a estructurar mejor la información.
 - Si el usuario te da indicaciones personalizadas adicionales durante la conversación, adáptate de inmediato a sus preferencias de análisis y estilo.`;
 
-    // 3. Invocar al Agente Gemini con el SDK oficial
+    // 3. Invocar al Agente Gemini con el modelo gemini-3.6-flash
     const ai = new GoogleGenAI({ apiKey });
 
     // Preparar el historial de chat compatible
@@ -154,16 +154,30 @@ REGLAS DE RESPUESTA:
       parts: [{ text: mensaje }],
     });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents,
-      config: {
-        systemInstruction: {
-          parts: [{ text: systemInstruction }],
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents,
+        config: {
+          systemInstruction: {
+            parts: [{ text: systemInstruction }],
+          },
         },
-        temperature: 0.3,
-      },
-    });
+      });
+    } catch (err36: any) {
+      console.warn("Fallo con gemini-3.6-flash en chat, reintentando con gemini-2.5-flash:", err36?.message);
+      response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents,
+        config: {
+          systemInstruction: {
+            parts: [{ text: systemInstruction }],
+          },
+          temperature: 0.3,
+        },
+      });
+    }
 
     const respuestaTexto = response.text || "No se obtuvo respuesta del agente.";
 

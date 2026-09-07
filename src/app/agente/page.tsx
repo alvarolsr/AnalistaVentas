@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import {
@@ -215,7 +215,7 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold tracking-tight">Agente Analista de Ventas</h2>
               <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-400/30 text-[10px] font-bold rounded-full uppercase tracking-wider">
-                Gemini 2.5 Flash
+                Gemini 3.6 Flash
               </span>
             </div>
             <p className="text-[11px] text-slate-300 flex items-center gap-1.5">

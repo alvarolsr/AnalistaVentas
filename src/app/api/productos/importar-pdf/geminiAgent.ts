@@ -1,4 +1,4 @@
-﻿import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { ProductoExtraido } from "./route";
 
 export interface OpcionesExtraccionGemini {
@@ -45,73 +45,146 @@ INSTRUCCIONES CLAVE DE EXTRACCIÓN:
 Ignora portadas decorativas, tablas de condiciones bancarias, términos y condiciones legales y pies de página que no sean productos reales.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [
-        {
-          role: "user",
-          parts: [
-            {
-              inlineData: {
-                data: base64Pdf,
-                mimeType: "application/pdf",
-              },
-            },
-            {
-              text: prompt,
-            },
-          ],
-        },
-      ],
-      config: {
-        temperature: 0.1,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            productos: {
-              type: Type.ARRAY,
-              description: "Lista de todos los productos individuales identificados en el catálogo.",
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  codigoSku: {
-                    type: Type.STRING,
-                    description: "Código SKU, Part Number o código de parte del producto.",
-                  },
-                  nombre: {
-                    type: Type.STRING,
-                    description: "Nombre comercial del producto.",
-                  },
-                  marca: {
-                    type: Type.STRING,
-                    description: "Marca comercial o fabricante del producto.",
-                  },
-                  categoria: {
-                    type: Type.STRING,
-                    description: "Categoría, línea o sublínea donde está agrupado el producto en el PDF.",
-                  },
-                  descripcion: {
-                    type: Type.STRING,
-                    description: "Detalles técnicos o descripción del producto.",
-                  },
-                  precio: {
-                    type: Type.NUMBER,
-                    description: "Precio unitario del producto.",
-                  },
-                  stock: {
-                    type: Type.INTEGER,
-                    description: "Cantidad de unidades o stock disponible.",
-                  },
+    // Intentamos con gemini-3.6-flash (última generación con razonamiento eficiente y multimodal)
+    // con fallback a gemini-2.5-flash
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                inlineData: {
+                  data: base64Pdf,
+                  mimeType: "application/pdf",
                 },
-                required: ["codigoSku", "nombre", "categoria", "precio"],
+              },
+              {
+                text: prompt,
+              },
+            ],
+          },
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              productos: {
+                type: Type.ARRAY,
+                description: "Lista de todos los productos individuales identificados en el catálogo.",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    codigoSku: {
+                      type: Type.STRING,
+                      description: "Código SKU, Part Number o código de parte del producto.",
+                    },
+                    nombre: {
+                      type: Type.STRING,
+                      description: "Nombre comercial del producto.",
+                    },
+                    marca: {
+                      type: Type.STRING,
+                      description: "Marca comercial o fabricante del producto.",
+                    },
+                    categoria: {
+                      type: Type.STRING,
+                      description: "Categoría, línea o sublínea donde está agrupado el producto en el PDF.",
+                    },
+                    descripcion: {
+                      type: Type.STRING,
+                      description: "Detalles técnicos o descripción del producto.",
+                    },
+                    precio: {
+                      type: Type.NUMBER,
+                      description: "Precio unitario del producto.",
+                    },
+                    stock: {
+                      type: Type.INTEGER,
+                      description: "Cantidad de unidades o stock disponible.",
+                    },
+                  },
+                  required: ["codigoSku", "nombre", "categoria", "precio"],
+                },
               },
             },
+            required: ["productos"],
           },
-          required: ["productos"],
         },
-      },
-    });
+      });
+    } catch (err36: any) {
+      console.warn("Fallo con gemini-3.6-flash, reintentando con gemini-2.5-flash:", err36?.message);
+      response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                inlineData: {
+                  data: base64Pdf,
+                  mimeType: "application/pdf",
+                },
+              },
+              {
+                text: prompt,
+              },
+            ],
+          },
+        ],
+        config: {
+          temperature: 0.1,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              productos: {
+                type: Type.ARRAY,
+                description: "Lista de todos los productos individuales identificados en el catálogo.",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    codigoSku: {
+                      type: Type.STRING,
+                      description: "Código SKU, Part Number o código de parte del producto.",
+                    },
+                    nombre: {
+                      type: Type.STRING,
+                      description: "Nombre comercial del producto.",
+                    },
+                    marca: {
+                      type: Type.STRING,
+                      description: "Marca comercial o fabricante del producto.",
+                    },
+                    categoria: {
+                      type: Type.STRING,
+                      description: "Categoría, línea o sublínea donde está agrupado el producto en el PDF.",
+                    },
+                    descripcion: {
+                      type: Type.STRING,
+                      description: "Detalles técnicos o descripción del producto.",
+                    },
+                    precio: {
+                      type: Type.NUMBER,
+                      description: "Precio unitario del producto.",
+                    },
+                    stock: {
+                      type: Type.INTEGER,
+                      description: "Cantidad de unidades o stock disponible.",
+                    },
+                  },
+                  required: ["codigoSku", "nombre", "categoria", "precio"],
+                },
+              },
+            },
+            required: ["productos"],
+          },
+        },
+      });
+    }
 
     const responseText = response.text?.trim() || "{}";
     const data = JSON.parse(responseText);
