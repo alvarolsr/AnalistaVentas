@@ -267,23 +267,23 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
   };
 
   return (
-    <div className="max-w-6xl mx-auto h-[calc(100vh-8.5rem)] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-fade-in">
+    <div className="max-w-6xl mx-auto h-[calc(100dvh-10rem)] md:h-[calc(100vh-8.5rem)] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-fade-in">
       {/* Barra Superior del Agente */}
-      <div className="px-6 py-3.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-tr from-purple-500 to-indigo-500 text-white rounded-xl shadow-md shadow-indigo-500/25">
-            <Bot className="w-5 h-5" />
+      <div className="px-3.5 sm:px-6 py-3 sm:py-3.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="p-2 bg-gradient-to-tr from-purple-500 to-indigo-500 text-white rounded-xl shadow-md shadow-indigo-500/25 shrink-0">
+            <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
+          <div className="truncate">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold tracking-tight">Agente Analista de Ventas</h2>
-              <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-400/30 text-[10px] font-bold rounded-full uppercase tracking-wider">
-                Gemini 3.8 Flash
+              <h2 className="text-xs sm:text-sm font-bold tracking-tight truncate">Agente Analista</h2>
+              <span className="px-1.5 sm:px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-400/30 text-[9px] sm:text-[10px] font-bold rounded-full uppercase tracking-wider shrink-0">
+                Gemini 3.8
               </span>
             </div>
-            <p className="text-[11px] text-slate-300 flex items-center gap-1.5">
-              <Database className="w-3 h-3 text-emerald-400" />
-              <span>Conectado al esquema de Neon Postgres</span>
+            <p className="text-[10px] sm:text-[11px] text-slate-300 flex items-center gap-1.5 truncate">
+              <Database className="w-3 h-3 text-emerald-400 shrink-0" />
+              <span className="truncate">Neon Postgres</span>
             </p>
           </div>
         </div>
@@ -309,7 +309,7 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
       </div>
 
       {/* Área de Mensajes */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
+      <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 bg-slate-50/50">
         {mensajes.map((msg) => {
           const esUsuario = msg.role === "user";
           return (
