@@ -1,6 +1,20 @@
 import { getDb, isNeonConfigured } from "./index";
-import { clientes, productos, compras, detallesCompra, type Cliente, type Producto, type Compra } from "./schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { 
+  clientes, 
+  productos, 
+  compras, 
+  detallesCompra, 
+  categorias,
+  type Cliente, 
+  type Producto, 
+  type Compra,
+  type Categoria 
+} from "./schema";
+import { eq, desc, sql, ilike } from "drizzle-orm";
+
+export interface CategoriaConSubcategorias extends Categoria {
+  subcategorias: Categoria[];
+}
 
 // Estado en memoria para desarrollo local si aún no se ha configurado la variable de entorno de Neon
 export interface DetalleConProducto {
@@ -85,6 +99,7 @@ let mockProductos: Producto[] = [
     marca: "Dell",
     descripcion: "Estación de trabajo portátil para ingenieros y analistas con pantalla Retina.",
     categoria: "Computación",
+    categoriaId: null,
     precio: "1350.00",
     stockActual: 12,
     activo: true,
@@ -97,6 +112,7 @@ let mockProductos: Producto[] = [
     marca: "LG",
     descripcion: "Monitor panorámico 144Hz con panel IPS y USB-C Hub.",
     categoria: "Periféricos",
+    categoriaId: null,
     precio: "480.00",
     stockActual: 24,
     activo: true,
@@ -109,6 +125,7 @@ let mockProductos: Producto[] = [
     marca: "Logitech",
     descripcion: "Switches táctiles silenciosos, batería de 4000mAh y conectividad dual.",
     categoria: "Periféricos",
+    categoriaId: null,
     precio: "95.00",
     stockActual: 50,
     activo: true,
@@ -121,6 +138,7 @@ let mockProductos: Producto[] = [
     marca: "HPE",
     descripcion: "Servidor empresarial de alto rendimiento con fuentes redundantes.",
     categoria: "Infraestructura",
+    categoriaId: null,
     precio: "2600.00",
     stockActual: 6,
     activo: true,
@@ -133,6 +151,7 @@ let mockProductos: Producto[] = [
     marca: "Cisco",
     descripcion: "Switch gestionado capa 2+ con 4 enlaces uplink SFP 10G.",
     categoria: "Redes",
+    categoriaId: null,
     precio: "380.00",
     stockActual: 18,
     activo: true,
@@ -145,6 +164,7 @@ let mockProductos: Producto[] = [
     marca: "Microsoft",
     descripcion: "Suscripción a suite de ciberseguridad y respaldo continuo en la nube.",
     categoria: "Software",
+    categoriaId: null,
     precio: "850.00",
     stockActual: 100,
     activo: true,
@@ -374,24 +394,108 @@ export const DataService = {
     return true;
   },
 
-  // PRODUCTOS
-  async getProductos(): Promise<Producto[]> {
+  // CATEGORÍAS
+  async getCategorias(): Promise<Categoria[]> {
     const db = getDb();
     if (db) {
       try {
-        return await db.select().from(productos).orderBy(desc(productos.creadoEn));
+        return await db.select().from(categorias).where(eq(categorias.activo, true)).orderBy(categorias.nombre);
+      } catch (err) {
+        console.error("Error consultando categorías en Neon:", err);
+      }
+    }
+    return [];
+  },
+
+  async getCategoriasArbol(): Promise<CategoriaConSubcategorias[]> {
+    const db = getDb();
+    if (db) {
+      try {
+        const todas = await db.select().from(categorias).where(eq(categorias.activo, true)).orderBy(categorias.nombre);
+        const principales = todas.filter((c) => !c.categoriaPadreId);
+        return principales.map((padre) => ({
+          ...padre,
+          subcategorias: todas.filter((sub) => sub.categoriaPadreId === padre.id),
+        }));
+      } catch (err) {
+        console.error("Error consultando árbol de categorías en Neon:", err);
+      }
+    }
+    return [];
+  },
+
+  async getOrCreateSubcategoria(nombreSubcat: string, nombrePadreSugerido?: string): Promise<string | null> {
+    const db = getDb();
+    if (!db || !nombreSubcat?.trim()) return null;
+
+    try {
+      const limpia = nombreSubcat.trim();
+      const existentes = await db.select().from(categorias);
+      const encontrada = existentes.find(
+        (c) => c.nombre.trim().toLowerCase() === limpia.toLowerCase() && c.categoriaPadreId !== null
+      );
+      if (encontrada) return encontrada.id;
+
+      let padreNombre = nombrePadreSugerido || (limpia.toLowerCase().includes("filtro") ? "FILTRO LYC" : "FRENO LYC");
+      let padre = existentes.find((c) => c.categoriaPadreId === null && c.nombre.toLowerCase() === padreNombre.toLowerCase());
+      if (!padre) {
+        padre = existentes.find((c) => c.categoriaPadreId === null && c.nombre.toUpperCase() === "FRENO LYC");
+      }
+
+      const [nueva] = await db
+        .insert(categorias)
+        .values({
+          nombre: limpia.toUpperCase(),
+          categoriaPadreId: padre ? padre.id : null,
+          descripcion: "Creada automáticamente desde importación",
+          activo: true,
+        })
+        .returning();
+      return nueva ? nueva.id : null;
+    } catch (err) {
+      console.error("Error en getOrCreateSubcategoria:", err);
+      return null;
+    }
+  },
+
+  // PRODUCTOS
+  async getProductos(): Promise<(Producto & { categoriaPrincipalNombre?: string })[]> {
+    const db = getDb();
+    if (db) {
+      try {
+        const prods = await db.select().from(productos).orderBy(productos.codigoSku);
+        const cats = await db.select().from(categorias);
+        const catMap = new Map(cats.map((c) => [c.id, c]));
+
+        return prods.map((p) => {
+          let principalNombre: string | undefined;
+          if (p.categoriaId && catMap.has(p.categoriaId)) {
+            const sub = catMap.get(p.categoriaId)!;
+            if (sub.categoriaPadreId && catMap.has(sub.categoriaPadreId)) {
+              principalNombre = catMap.get(sub.categoriaPadreId)!.nombre;
+            }
+          }
+          return {
+            ...p,
+            categoriaPrincipalNombre: principalNombre,
+          };
+        });
       } catch (err) {
         console.error("Error consultando productos en Neon:", err);
       }
     }
-    return [...mockProductos].sort((a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime());
+    return [...mockProductos].sort((a, b) => (a.codigoSku || "").localeCompare(b.codigoSku || "", undefined, { numeric: true }));
   },
 
   async createProducto(data: Omit<Producto, "id" | "creadoEn">): Promise<Producto> {
     const db = getDb();
     if (db) {
       try {
-        const [inserted] = await db.insert(productos).values(data).returning();
+        let catId = data.categoriaId ?? null;
+        if (!catId && data.categoria) {
+          catId = (await this.getOrCreateSubcategoria(data.categoria)) || null;
+        }
+        const [inserted] = await db.insert(productos).values({ ...data, categoriaId: catId }).returning();
         return inserted;
       } catch (err) {
         console.error("Error creando producto en Neon:", err);
@@ -411,10 +515,52 @@ export const DataService = {
     const db = getDb();
     if (db) {
       try {
-        for (const item of items) {
+        const todasCats = await db.select().from(categorias);
+        const principalesMap = new Map(todasCats.filter((c) => c.categoriaPadreId === null).map((c) => [c.nombre.toUpperCase(), c.id]));
+        const scopedSubcatsMap = new Map(todasCats.filter((c) => c.categoriaPadreId !== null).map((c) => [`${c.categoriaPadreId}_${c.nombre.toUpperCase()}`, c.id]));
+        const subcatsMap = new Map(todasCats.filter((c) => c.categoriaPadreId !== null).map((c) => [c.nombre.toUpperCase(), c.id]));
+        const filtroPadre = todasCats.find((c) => c.nombre === "FILTRO LYC");
+        const frenoPadre = todasCats.find((c) => c.nombre === "FRENO LYC");
+
+        for (const item of items as any[]) {
+          let catId = item.categoriaId;
+          if (!catId && item.categoria) {
+            const catNombreUpper = item.categoria.trim().toUpperCase();
+            let padreId: string | null = null;
+            if (item.categoriaPrincipalNombre && principalesMap.has(item.categoriaPrincipalNombre.toUpperCase())) {
+              padreId = principalesMap.get(item.categoriaPrincipalNombre.toUpperCase())!;
+            } else if (catNombreUpper.includes("FILTRO")) {
+              padreId = filtroPadre?.id || null;
+            } else {
+              padreId = frenoPadre?.id || null;
+            }
+
+            const scopedKey = padreId ? `${padreId}_${catNombreUpper}` : null;
+            if (scopedKey && scopedSubcatsMap.has(scopedKey)) {
+              catId = scopedSubcatsMap.get(scopedKey);
+            } else if (!scopedKey && subcatsMap.has(catNombreUpper)) {
+              catId = subcatsMap.get(catNombreUpper);
+            } else {
+              const [nueva] = await db.insert(categorias).values({
+                nombre: catNombreUpper,
+                categoriaPadreId: padreId || null,
+                descripcion: "Creada automáticamente desde importación",
+                activo: true,
+              }).returning();
+              if (nueva) {
+                if (padreId) scopedSubcatsMap.set(`${padreId}_${catNombreUpper}`, nueva.id);
+                subcatsMap.set(catNombreUpper, nueva.id);
+                catId = nueva.id;
+              }
+            }
+          }
+
           await db
             .insert(productos)
-            .values(item)
+            .values({
+              ...item,
+              categoriaId: catId,
+            })
             .onConflictDoUpdate({
               target: productos.codigoSku,
               set: {
@@ -422,6 +568,7 @@ export const DataService = {
                 marca: item.marca,
                 descripcion: item.descripcion,
                 categoria: item.categoria,
+                categoriaId: catId || sql`excluded.categoria_id`,
                 precio: item.precio,
                 stockActual: item.stockActual,
                 activo: item.activo,
@@ -493,16 +640,29 @@ export const DataService = {
 
   async createCompra(data: {
     clienteId: string;
+    numeroFactura?: string;
     metodoPago: string;
     estado: string;
     notas?: string;
+    fechaCompra?: string | Date;
     items: { productoId: string; cantidad: number; precioUnitario: number }[];
   }): Promise<CompraCompleta> {
     const cliente = await this.getClienteById(data.clienteId);
     if (!cliente) throw new Error("Cliente no encontrado");
 
     const totalCalculado = data.items.reduce((acc, item) => acc + item.cantidad * item.precioUnitario, 0);
-    const numeroFactura = `FAC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const numeroFactura = data.numeroFactura || `FAC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    let fechaFinal = new Date();
+    if (data.fechaCompra) {
+      const parsed =
+        typeof data.fechaCompra === "string" && !data.fechaCompra.includes("T")
+          ? new Date(data.fechaCompra + "T12:00:00")
+          : new Date(data.fechaCompra);
+      if (!isNaN(parsed.getTime())) {
+        fechaFinal = parsed;
+      }
+    }
 
     const db = getDb();
     if (db) {
@@ -512,7 +672,7 @@ export const DataService = {
           .values({
             clienteId: data.clienteId,
             numeroFactura,
-            fechaCompra: new Date(),
+            fechaCompra: fechaFinal,
             total: totalCalculado.toFixed(2),
             estado: data.estado || "completada",
             metodoPago: data.metodoPago || "transferencia",
@@ -571,7 +731,7 @@ export const DataService = {
       clienteNombre: cliente.nombre,
       clienteEmpresa: cliente.empresa,
       numeroFactura,
-      fechaCompra: new Date(),
+      fechaCompra: fechaFinal,
       total: totalCalculado.toFixed(2),
       estado: data.estado || "completada",
       metodoPago: data.metodoPago || "transferencia",

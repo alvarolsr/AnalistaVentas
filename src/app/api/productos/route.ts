@@ -22,13 +22,14 @@ export async function POST(req: Request) {
     const nuevoProducto = await DataService.createProducto({
       codigoSku: body.codigoSku.trim().toUpperCase(),
       nombre: body.nombre.trim(),
-      marca: body.marca ? body.marca.trim() : null,
+      marca: body.marca && body.marca.trim() ? body.marca.trim().toUpperCase() : "LYC",
       descripcion: body.descripcion ? body.descripcion.trim() : null,
       categoria: body.categoria.trim(),
+      categoriaPrincipalNombre: body.categoriaPrincipal ? body.categoriaPrincipal.trim() : undefined,
       precio: parseFloat(body.precio).toFixed(2),
       stockActual: parseInt(body.stockActual || 0, 10),
       activo: body.activo !== undefined ? Boolean(body.activo) : true,
-    });
+    } as any);
 
     return NextResponse.json(nuevoProducto, { status: 201 });
   } catch (error: any) {

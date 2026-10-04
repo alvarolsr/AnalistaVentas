@@ -137,7 +137,7 @@ REGLAS DE RESPUESTA:
 - Emplea formato Markdown con negritas, listas o tablas cuando ayude a estructurar mejor la información.
 - Si el usuario te da indicaciones personalizadas adicionales durante la conversación, adáptate de inmediato a sus preferencias de análisis y estilo.`;
 
-    // 3. Invocar al Agente Gemini con el modelo gemini-3.6-flash
+    // 3. Invocar al Agente Gemini con el modelo gemini-3.8-flash
     const ai = new GoogleGenAI({ apiKey });
 
     // Preparar el historial de chat compatible
@@ -196,30 +196,16 @@ REGLAS DE RESPUESTA:
         },
       });
     } catch (err38: any) {
-      console.warn("Fallo con gemini-3.8-flash en chat, reintentando con gemini-3.6-flash:", err38?.message);
-      try {
-        response = await ai.models.generateContent({
-          model: "gemini-3.6-flash",
-          contents,
-          config: {
-            systemInstruction: {
-              parts: [{ text: systemInstruction }],
-            },
+      console.warn("Fallo con gemini-3.8-flash en chat, reintentando con gemini-3.8-pro:", err38?.message);
+      response = await ai.models.generateContent({
+        model: "gemini-3.8-pro",
+        contents,
+        config: {
+          systemInstruction: {
+            parts: [{ text: systemInstruction }],
           },
-        });
-      } catch (err36: any) {
-        console.warn("Fallo con gemini-3.6-flash en chat, reintentando con gemini-2.5-flash:", err36?.message);
-        response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents,
-          config: {
-            systemInstruction: {
-              parts: [{ text: systemInstruction }],
-            },
-            temperature: 0.3,
-          },
-        });
-      }
+        },
+      });
     }
 
     const respuestaTexto = response.text || "No se obtuvo respuesta del agente.";

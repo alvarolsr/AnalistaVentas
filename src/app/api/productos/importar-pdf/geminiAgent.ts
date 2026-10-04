@@ -36,7 +36,7 @@ Tu tarea es analizar exhaustivamente este documento PDF y extraer CADA UNO de lo
 INSTRUCCIONES CLAVE DE EXTRACCIÓN:
 1. **CATEGORÍAS Y SUBLÍNEAS**: Identifica las secciones, títulos de grupos, líneas de producto o encabezados de categoría (ej: "Laptops / Portátiles", "Servidores", "Almacenamiento", "Monitores", "Redes / Routers", "Accesorios", "Impresión"). Asigna a cada producto la categoría o sublínea exacta a la que pertenece según la estructura del documento.
 2. **CÓDIGO SKU**: Extrae el código de producto, modelo del fabricante (Part Number) o SKU visible en la tabla o ficha (ej: "20W0005VUS", "MGN63LA/A", "TL-SG108"). Si un producto no tiene SKU explícito en la tabla, genera uno descriptivo y consistente usando la marca y modelo (ej: "HP-ENVY-15", "DELL-LAT-3520"). NUNCA lo dejes vacío.
-3. **MARCA**: Identifica con exactitud la marca fabricante (ej: Apple, HP, Lenovo, Dell, Asus, Cisco, TP-Link, Samsung, Logitech, Kingston, etc.). Si está en el encabezado de la sección o en el nombre del producto, extráela.
+3. **MARCA**: La marca debe ser ESTRICTAMENTE una de estas dos opciones: "LYC" o "PAI". Si el catálogo o producto corresponde a LYC, asigna "LYC". Si corresponde a PAI, asigna "PAI". Si no se especifica explícitamente, deduce la más adecuada entre "LYC" y "PAI" (por defecto "LYC"). NUNCA asignes otra marca distinta a "LYC" o "PAI".
 4. **NOMBRE**: Título limpio y representativo del producto sin incluir palabras de relleno de la tabla.
 5. **PRECIO**: Extrae el precio unitario numérico (en dólares USD o moneda principal de la lista). Debe ser un número con hasta 2 decimales (ej: 450.50). Si hay múltiples precios (ej. mayorista vs detalle), usa el precio principal o unitario. Si no tiene precio explícito, asigna 0.
 6. **STOCK**: Si el documento muestra unidades disponibles, cantidad o inventario, extrae el número entero. Si no se especifica stock, coloca 10 como valor por defecto.
@@ -45,215 +45,86 @@ INSTRUCCIONES CLAVE DE EXTRACCIÓN:
 Ignora portadas decorativas, tablas de condiciones bancarias, términos y condiciones legales y pies de página que no sean productos reales.`;
 
   try {
-    // Intentamos con gemini-3.8-flash (última generación con razonamiento avanzado y multimodal)
-    // con fallback a gemini-3.6-flash y gemini-2.5-flash
+    // Intentamos con gemini-3.8-flash (con fallback a gemini-3.8-pro)
+    const contents = [
+      {
+        role: "user",
+        parts: [
+          {
+            inlineData: {
+              data: base64Pdf,
+              mimeType: "application/pdf",
+            },
+          },
+          {
+            text: prompt,
+          },
+        ],
+      },
+    ];
+
+    const config = {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          productos: {
+            type: Type.ARRAY,
+            description: "Lista de todos los productos individuales identificados en el catálogo.",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                codigoSku: {
+                  type: Type.STRING,
+                  description: "Código SKU, Part Number o código de parte del producto.",
+                },
+                nombre: {
+                  type: Type.STRING,
+                  description: "Nombre comercial del producto.",
+                },
+                marca: {
+                  type: Type.STRING,
+                  description: "Marca comercial o fabricante del producto detectado en el documento (ej: LYC, PAI, CATERPILLAR, CUMMINS, ISUZU, MACK, etc.).",
+                },
+                categoria: {
+                  type: Type.STRING,
+                  description: "Categoría, línea o sublínea donde está agrupado el producto en el PDF.",
+                },
+                descripcion: {
+                  type: Type.STRING,
+                  description: "Detalles técnicos o descripción del producto.",
+                },
+                precio: {
+                  type: Type.NUMBER,
+                  description: "Precio unitario del producto.",
+                },
+                stock: {
+                  type: Type.INTEGER,
+                  description: "Cantidad de unidades o stock disponible.",
+                },
+              },
+              required: ["codigoSku", "nombre", "categoria", "precio"],
+            },
+          },
+        },
+        required: ["productos"],
+      },
+    };
+
     let response;
     try {
       response = await ai.models.generateContent({
         model: "gemini-3.8-flash",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                inlineData: {
-                  data: base64Pdf,
-                  mimeType: "application/pdf",
-                },
-              },
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              productos: {
-                type: Type.ARRAY,
-                description: "Lista de todos los productos individuales identificados en el catálogo.",
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    codigoSku: {
-                      type: Type.STRING,
-                      description: "Código SKU, Part Number o código de parte del producto.",
-                    },
-                    nombre: {
-                      type: Type.STRING,
-                      description: "Nombre comercial del producto.",
-                    },
-                    marca: {
-                      type: Type.STRING,
-                      description: "Marca comercial o fabricante del producto.",
-                    },
-                    categoria: {
-                      type: Type.STRING,
-                      description: "Categoría, línea o sublínea donde está agrupado el producto en el PDF.",
-                    },
-                    descripcion: {
-                      type: Type.STRING,
-                      description: "Detalles técnicos o descripción del producto.",
-                    },
-                    precio: {
-                      type: Type.NUMBER,
-                      description: "Precio unitario del producto.",
-                    },
-                    stock: {
-                      type: Type.INTEGER,
-                      description: "Cantidad de unidades o stock disponible.",
-                    },
-                  },
-                  required: ["codigoSku", "nombre", "categoria", "precio"],
-                },
-              },
-            },
-            required: ["productos"],
-          },
-        },
+        contents,
+        config,
       });
     } catch (err38: any) {
-      console.warn("Fallo con gemini-3.8-flash, reintentando con gemini-3.6-flash:", err38?.message);
-      try {
-        response = await ai.models.generateContent({
-          model: "gemini-3.6-flash",
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  inlineData: {
-                    data: base64Pdf,
-                    mimeType: "application/pdf",
-                  },
-                },
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                productos: {
-                  type: Type.ARRAY,
-                  description: "Lista de todos los productos individuales identificados en el catálogo.",
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      codigoSku: {
-                        type: Type.STRING,
-                        description: "Código SKU, Part Number o código de parte del producto.",
-                      },
-                      nombre: {
-                        type: Type.STRING,
-                        description: "Nombre comercial del producto.",
-                      },
-                      marca: {
-                        type: Type.STRING,
-                        description: "Marca comercial o fabricante del producto.",
-                      },
-                      categoria: {
-                        type: Type.STRING,
-                        description: "Categoría, línea o sublínea donde está agrupado el producto en el PDF.",
-                      },
-                      descripcion: {
-                        type: Type.STRING,
-                        description: "Detalles técnicos o descripción del producto.",
-                      },
-                      precio: {
-                        type: Type.NUMBER,
-                        description: "Precio unitario del producto.",
-                      },
-                      stock: {
-                        type: Type.INTEGER,
-                        description: "Cantidad de unidades o stock disponible.",
-                      },
-                    },
-                    required: ["codigoSku", "nombre", "categoria", "precio"],
-                  },
-                },
-              },
-              required: ["productos"],
-            },
-          },
-        });
-      } catch (err36: any) {
-        console.warn("Fallo con gemini-3.6-flash, reintentando con gemini-2.5-flash:", err36?.message);
-        response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  inlineData: {
-                    data: base64Pdf,
-                    mimeType: "application/pdf",
-                  },
-                },
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          config: {
-            temperature: 0.1,
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                productos: {
-                  type: Type.ARRAY,
-                  description: "Lista de todos los productos individuales identificados en el catálogo.",
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      codigoSku: {
-                        type: Type.STRING,
-                        description: "Código SKU, Part Number o código de parte del producto.",
-                      },
-                      nombre: {
-                        type: Type.STRING,
-                        description: "Nombre comercial del producto.",
-                      },
-                      marca: {
-                        type: Type.STRING,
-                        description: "Marca comercial o fabricante del producto.",
-                      },
-                      categoria: {
-                        type: Type.STRING,
-                        description: "Categoría, línea o sublínea donde está agrupado el producto en el PDF.",
-                      },
-                      descripcion: {
-                        type: Type.STRING,
-                        description: "Detalles técnicos o descripción del producto.",
-                      },
-                      precio: {
-                        type: Type.NUMBER,
-                        description: "Precio unitario del producto.",
-                      },
-                      stock: {
-                        type: Type.INTEGER,
-                        description: "Cantidad de unidades o stock disponible.",
-                      },
-                    },
-                    required: ["codigoSku", "nombre", "categoria", "precio"],
-                  },
-                },
-              },
-              required: ["productos"],
-            },
-          },
-        });
-      }
+      console.warn("Fallo con gemini-3.8-flash, reintentando con gemini-3.8-pro:", err38?.message);
+      response = await ai.models.generateContent({
+        model: "gemini-3.8-pro",
+        contents,
+        config,
+      });
     }
 
     const responseText = response.text?.trim() || "{}";
@@ -272,7 +143,7 @@ Ignora portadas decorativas, tablas de condiciones bancarias, términos y condic
         idTemp: `gemini-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 6)}`,
         codigoSku: String(item.codigoSku || `SKU-${index + 1}`).trim().toUpperCase(),
         nombre: String(item.nombre || "Producto sin nombre").trim(),
-        marca: item.marca ? String(item.marca).trim() : undefined,
+        marca: item.marca && String(item.marca).trim() ? String(item.marca).trim().toUpperCase() : "LYC",
         descripcion: String(item.descripcion || `Extraído con Agente Gemini de ${opciones.fileName}`).trim(),
         categoria: String(item.categoria || "General").trim(),
         precio: precioValido,

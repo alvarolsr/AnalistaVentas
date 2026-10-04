@@ -21,9 +21,11 @@ export async function POST(req: Request) {
 
     const compra = await DataService.createCompra({
       clienteId: body.clienteId,
+      numeroFactura: body.numeroFactura,
       metodoPago: body.metodoPago || "transferencia",
       estado: body.estado || "completada",
       notas: body.notas,
+      fechaCompra: body.fechaCompra || body.fecha,
       items: body.items,
     });
 

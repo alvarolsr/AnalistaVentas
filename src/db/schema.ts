@@ -13,6 +13,15 @@ export const clientes = pgTable("clientes", {
   creadoEn: timestamp("creado_en", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const categorias = pgTable("categorias", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  nombre: varchar("nombre", { length: 150 }).notNull(),
+  categoriaPadreId: uuid("categoria_padre_id").references((): any => categorias.id, { onDelete: "cascade" }),
+  descripcion: text("descripcion"),
+  activo: boolean("activo").default(true).notNull(),
+  creadoEn: timestamp("creado_en", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const productos = pgTable("productos", {
   id: uuid("id").defaultRandom().primaryKey(),
   codigoSku: varchar("codigo_sku", { length: 100 }).notNull().unique(),
@@ -20,6 +29,7 @@ export const productos = pgTable("productos", {
   marca: varchar("marca", { length: 100 }),
   descripcion: text("descripcion"),
   categoria: varchar("categoria", { length: 100 }).notNull(),
+  categoriaId: uuid("categoria_id").references(() => categorias.id, { onDelete: "restrict" }),
   precio: numeric("precio", { precision: 12, scale: 2 }).notNull(),
   stockActual: integer("stock_actual").default(0).notNull(),
   activo: boolean("activo").default(true).notNull(),
@@ -66,7 +76,23 @@ export const comprasRelations = relations(compras, ({ one, many }) => ({
   detalles: many(detallesCompra),
 }));
 
-export const productosRelations = relations(productos, ({ many }) => ({
+export const categoriasRelations = relations(categorias, ({ one, many }) => ({
+  padre: one(categorias, {
+    fields: [categorias.categoriaPadreId],
+    references: [categorias.id],
+    relationName: "jerarquiaCategorias",
+  }),
+  subcategorias: many(categorias, {
+    relationName: "jerarquiaCategorias",
+  }),
+  productos: many(productos),
+}));
+
+export const productosRelations = relations(productos, ({ one, many }) => ({
+  categoriaRel: one(categorias, {
+    fields: [productos.categoriaId],
+    references: [categorias.id],
+  }),
   detalles: many(detallesCompra),
 }));
 
@@ -80,6 +106,9 @@ export const detallesCompraRelations = relations(detallesCompra, ({ one }) => ({
     references: [productos.id],
   }),
 }));
+
+export type Categoria = typeof categorias.$inferSelect;
+export type NuevaCategoria = typeof categorias.$inferInsert;
 
 export type Cliente = typeof clientes.$inferSelect;
 export type NuevoCliente = typeof clientes.$inferInsert;

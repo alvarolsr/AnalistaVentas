@@ -20,6 +20,7 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const file = formData.get("pdf") as File | null;
     const apiKeyCustom = (formData.get("apiKey") as string | null) || undefined;
+    const marcaPorDefecto = ((formData.get("marca") as string | null) || "LYC").toUpperCase() === "PAI" ? "PAI" : "LYC";
     const modoFuerza = (formData.get("modo") as string | null) || "auto"; // "gemini", "heuristico", "auto"
 
     if (!file) {
@@ -201,18 +202,12 @@ export async function POST(req: Request) {
           }
         }
 
-        // Marca inferida
-        const marcasComunes = [
-          "HP", "Lenovo", "Dell", "Asus", "Acer", "Apple", "Samsung", "LG",
-          "Logitech", "TP-Link", "Cisco", "Kingston", "Corsair", "Epson",
-          "Canon", "Sony", "Xiaomi", "Huawei", "Intel", "AMD", "NVIDIA", "Microsoft"
-        ];
-        let marca = "";
-        for (const m of marcasComunes) {
-          if (new RegExp(`\\b${m}\\b`, "i").test(nombre)) {
-            marca = m;
-            break;
-          }
+        // Marca inferida: estrictamente LYC o PAI
+        let marca = marcaPorDefecto;
+        if (/\bpai\b/i.test(nombre) || /\bpai\b/i.test(rawLine)) {
+          marca = "PAI";
+        } else if (/\blyc\b/i.test(nombre) || /\blyc\b/i.test(rawLine)) {
+          marca = "LYC";
         }
 
         productosExtraidos.push({
