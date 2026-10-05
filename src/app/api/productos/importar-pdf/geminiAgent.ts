@@ -111,20 +111,28 @@ Ignora portadas decorativas, tablas de condiciones bancarias, términos y condic
       },
     };
 
+    const modelosIntentar = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
     let response;
-    try {
-      response = await ai.models.generateContent({
-        model: "gemini-3.8-flash",
-        contents,
-        config,
-      });
-    } catch (err38: any) {
-      console.warn("Fallo con gemini-3.8-flash, reintentando con gemini-3.8-pro:", err38?.message);
-      response = await ai.models.generateContent({
-        model: "gemini-3.8-pro",
-        contents,
-        config,
-      });
+    let ultimoError: any = null;
+
+    for (const model of modelosIntentar) {
+      try {
+        response = await ai.models.generateContent({
+          model,
+          contents,
+          config,
+        });
+        if (response) {
+          break;
+        }
+      } catch (err: any) {
+        ultimoError = err;
+        console.warn(`[Gemini PDF Agent] Error o alta demanda con ${model}:`, err?.message || err);
+      }
+    }
+
+    if (!response) {
+      throw new Error(ultimoError?.message || "No fue posible procesar el documento con los modelos de Gemini disponibles.");
     }
 
     const responseText = response.text?.trim() || "{}";

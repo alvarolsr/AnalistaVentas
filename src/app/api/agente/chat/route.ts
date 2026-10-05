@@ -184,28 +184,33 @@ REGLAS DE RESPUESTA:
       parts: userParts,
     });
 
+    // 3. Invocar al Agente Gemini priorizando gemini-3.8-flash con fallback de alta disponibilidad
+    const modelosIntentar = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
     let response;
-    try {
-      response = await ai.models.generateContent({
-        model: "gemini-3.8-flash",
-        contents,
-        config: {
-          systemInstruction: {
-            parts: [{ text: systemInstruction }],
+    let ultimoError: any = null;
+
+    for (const model of modelosIntentar) {
+      try {
+        response = await ai.models.generateContent({
+          model,
+          contents,
+          config: {
+            systemInstruction: {
+              parts: [{ text: systemInstruction }],
+            },
           },
-        },
-      });
-    } catch (err38: any) {
-      console.warn("Fallo con gemini-3.8-flash en chat, reintentando con gemini-3.8-pro:", err38?.message);
-      response = await ai.models.generateContent({
-        model: "gemini-3.8-pro",
-        contents,
-        config: {
-          systemInstruction: {
-            parts: [{ text: systemInstruction }],
-          },
-        },
-      });
+        });
+        if (response) {
+          break;
+        }
+      } catch (err: any) {
+        ultimoError = err;
+        console.warn(`[Agente Chat] Error o alta demanda con ${model}:`, err?.message || err);
+      }
+    }
+
+    if (!response) {
+      throw new Error(ultimoError?.message || "No fue posible obtener respuesta de Gemini en los modelos disponibles.");
     }
 
     const respuestaTexto = response.text || "No se obtuvo respuesta del agente.";
