@@ -17,6 +17,8 @@ import {
   Receipt,
   Calendar,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   DollarSign,
   TrendingUp,
   Package,
@@ -39,6 +41,7 @@ export default function ClientesPage() {
   // Historial Modal State
   const [clienteHistorial, setClienteHistorial] = useState<Cliente | null>(null);
   const [busquedaHistorial, setBusquedaHistorial] = useState("");
+  const [comprasExpandidas, setComprasExpandidas] = useState<Record<string, boolean>>({});
 
   // Form State
   const [form, setForm] = useState({
@@ -187,6 +190,25 @@ export default function ClientesPage() {
           )
         )
       : null;
+
+  const toggleCompraExpandida = (id: string) => {
+    setComprasExpandidas((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const handleExpandirTodas = () => {
+    const expandidas: Record<string, boolean> = {};
+    comprasFiltradasHistorial.forEach((c) => {
+      expandidas[c.id] = true;
+    });
+    setComprasExpandidas(expandidas);
+  };
+
+  const handleMinimizarTodas = () => {
+    setComprasExpandidas({});
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -343,6 +365,7 @@ export default function ClientesPage() {
                   <button
                     onClick={() => {
                       setBusquedaHistorial("");
+                      setComprasExpandidas({});
                       setClienteHistorial(cliente);
                     }}
                     className="text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1 hover:underline transition"
@@ -477,11 +500,33 @@ export default function ClientesPage() {
 
             {/* Contenido con Scroll: Lista de Facturas y Productos */}
             <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Receipt className="w-4 h-4 text-blue-600" />
-                  <span>Historial de Facturas y Compras ({comprasFiltradasHistorial.length})</span>
-                </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-blue-600" />
+                    <span>Historial de Facturas y Compras ({comprasFiltradasHistorial.length})</span>
+                  </h3>
+
+                  {comprasFiltradasHistorial.length > 0 && (
+                    <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500">
+                      <button
+                        type="button"
+                        onClick={handleExpandirTodas}
+                        className="px-2 py-0.5 rounded-md hover:bg-slate-100 text-[11px] text-blue-600 font-medium hover:underline transition"
+                      >
+                        Expandir todas
+                      </button>
+                      <span>•</span>
+                      <button
+                        type="button"
+                        onClick={handleMinimizarTodas}
+                        className="px-2 py-0.5 rounded-md hover:bg-slate-100 text-[11px] text-slate-600 font-medium hover:underline transition"
+                      >
+                        Minimizar todas
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 {comprasDelClienteSeleccionado.length > 0 && (
                   <div className="relative max-w-xs w-full">
@@ -519,23 +564,36 @@ export default function ClientesPage() {
                   No se encontraron compras que coincidan con "{busquedaHistorial}"
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {comprasFiltradasHistorial.map((compra) => {
                     const esCompletada = compra.estado === "completada";
                     const esPendiente = compra.estado === "pendiente";
+                    const isExpanded = Boolean(comprasExpandidas[compra.id]);
 
                     return (
                       <div
                         key={compra.id}
-                        className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:border-slate-300 transition space-y-3"
+                        className={`bg-white rounded-xl border transition shadow-xs overflow-hidden ${
+                          isExpanded ? "border-blue-300 ring-1 ring-blue-100" : "border-slate-200 hover:border-slate-300"
+                        }`}
                       >
-                        {/* Cabecera de la orden */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-                          <div className="flex items-center gap-3">
-                            <span className="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                        {/* Renglón minimizado (Factura, Fecha, Estado, Crédito/Método y Monto Total) */}
+                        <div
+                          onClick={() => toggleCompraExpandida(compra.id)}
+                          className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 cursor-pointer hover:bg-slate-50/80 transition select-none"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="p-1 text-slate-400 rounded-md">
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4 text-blue-600" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4 text-slate-500" />
+                              )}
+                            </div>
+                            <span className="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 shrink-0">
                               {compra.numeroFactura}
                             </span>
-                            <span className="text-xs text-slate-500 flex items-center gap-1">
+                            <span className="text-xs text-slate-500 flex items-center gap-1 shrink-0">
                               <Calendar className="w-3.5 h-3.5 text-slate-400" />
                               {new Date(compra.fechaCompra).toLocaleDateString("es-ES", {
                                 year: "numeric",
@@ -545,7 +603,7 @@ export default function ClientesPage() {
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
                             <span
                               className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${
                                 esCompletada
@@ -558,12 +616,12 @@ export default function ClientesPage() {
                               {compra.estado}
                             </span>
 
-                            <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md capitalize flex items-center gap-1">
+                            <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-md capitalize flex items-center gap-1">
                               <CreditCard className="w-3 h-3 text-slate-400" />
                               {compra.metodoPago}
                             </span>
 
-                            <span className="text-base font-bold text-slate-900 font-mono pl-2">
+                            <span className="text-sm sm:text-base font-bold text-slate-900 font-mono pl-1 sm:pl-2">
                               ${Number(compra.total).toLocaleString("en-US", {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
@@ -572,42 +630,46 @@ export default function ClientesPage() {
                           </div>
                         </div>
 
-                        {/* Desglose de Productos de la Compra */}
-                        <div className="space-y-1.5">
-                          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                            Productos en la orden ({compra.detalles?.length || 0})
-                          </p>
-                          <div className="bg-slate-50/70 rounded-xl border border-slate-100 divide-y divide-slate-100 overflow-hidden">
-                            {compra.detalles?.map((det) => (
-                              <div
-                                key={det.id}
-                                className="p-2.5 flex items-center justify-between text-xs gap-3 hover:bg-slate-100/50 transition"
-                              >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <span className="font-mono text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 shrink-0">
-                                    {det.codigoSku}
-                                  </span>
-                                  <span className="font-medium text-slate-800 truncate">
-                                    {det.nombreProducto}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-4 shrink-0 text-slate-600">
-                                  <span className="text-slate-500 text-[11px]">
-                                    {det.cantidad} unid. × ${Number(det.precioUnitario).toFixed(2)}
-                                  </span>
-                                  <span className="font-bold text-slate-900 font-mono">
-                                    ${Number(det.subtotal).toFixed(2)}
-                                  </span>
-                                </div>
+                        {/* Desglose desplegable de Productos de la Compra */}
+                        {isExpanded && (
+                          <div className="p-4 pt-1 border-t border-slate-100 space-y-3 bg-slate-50/40 animate-fade-in">
+                            <div className="space-y-1.5 pt-2">
+                              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                                Productos en la orden ({compra.detalles?.length || 0})
+                              </p>
+                              <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 overflow-hidden shadow-xs">
+                                {compra.detalles?.map((det) => (
+                                  <div
+                                    key={det.id}
+                                    className="p-2.5 flex items-center justify-between text-xs gap-3 hover:bg-slate-50 transition"
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="font-mono text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 shrink-0">
+                                        {det.codigoSku}
+                                      </span>
+                                      <span className="font-medium text-slate-800 truncate">
+                                        {det.nombreProducto}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-4 shrink-0 text-slate-600">
+                                      <span className="text-slate-500 text-[11px]">
+                                        {det.cantidad} unid. × ${Number(det.precioUnitario).toFixed(2)}
+                                      </span>
+                                      <span className="font-bold text-slate-900 font-mono">
+                                        ${Number(det.subtotal).toFixed(2)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                        </div>
+                            </div>
 
-                        {compra.notas && (
-                          <p className="text-[11px] text-slate-500 italic bg-amber-50/50 border border-amber-100 rounded-lg p-2">
-                            Nota: {compra.notas}
-                          </p>
+                            {compra.notas && (
+                              <p className="text-[11px] text-slate-500 italic bg-amber-50/60 border border-amber-100 rounded-lg p-2.5">
+                                Nota: {compra.notas}
+                              </p>
+                            )}
+                          </div>
                         )}
                       </div>
                     );
