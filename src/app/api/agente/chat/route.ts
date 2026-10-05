@@ -184,9 +184,19 @@ REGLAS DE RESPUESTA:
       parts: userParts,
     });
 
-    // 3. Invocar al Agente Gemini priorizando gemini-3.8-flash con fallback de alta disponibilidad
-    const modelosIntentar = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
+    // 3. Invocar al Agente Gemini con prioridad y fallback de alta disponibilidad
+    const modeloSolicitado = (body.modelo as string) || "gemini-3.6-flash";
+    const candidatos = [
+      modeloSolicitado,
+      "gemini-3.6-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.5-flash",
+      "gemini-3.8-flash",
+    ];
+    const modelosIntentar = Array.from(new Set(candidatos));
+
     let response;
+    let modeloExitoso = "";
     let ultimoError: any = null;
 
     for (const model of modelosIntentar) {
@@ -195,22 +205,31 @@ REGLAS DE RESPUESTA:
           model,
           contents,
           config: {
-            systemInstruction: {
-              parts: [{ text: systemInstruction }],
-            },
+            systemInstruction,
           },
         });
         if (response) {
+          modeloExitoso = model;
           break;
         }
       } catch (err: any) {
         ultimoError = err;
         console.warn(`[Agente Chat] Error o alta demanda con ${model}:`, err?.message || err);
+        // Pausa preventiva de 800ms antes del fallback para que el gateway de Google no descarte la solicitud sucesiva
+        await new Promise((resolve) => setTimeout(resolve, 800));
       }
     }
 
     if (!response) {
-      throw new Error(ultimoError?.message || "No fue posible obtener respuesta de Gemini en los modelos disponibles.");
+      const errMsg = ultimoError?.message || "";
+      if (ultimoError?.status === 429 || errMsg.includes("Quota exceeded") || errMsg.includes("RESOURCE_EXHAUSTED")) {
+        throw new Error(
+          "Se ha agotado la cuota diaria gratuita para este modelo en Google AI Studio (límite de 20 peticiones por día en el tier gratuito). Por favor selecciona otro modelo en las indicaciones (como Gemini 3.5 Flash Lite) o utiliza una clave de API con cuota disponible."
+        );
+      }
+      throw new Error(
+        ultimoError?.message || "Los modelos de Gemini están experimentando alta demanda momentánea en los servidores de Google. Por favor intenta nuevamente en unos instantes."
+      );
     }
 
     const respuestaTexto = response.text || "No se obtuvo respuesta del agente.";
@@ -218,6 +237,7 @@ REGLAS DE RESPUESTA:
     return NextResponse.json({
       success: true,
       respuesta: respuestaTexto,
+      modeloUsado: modeloExitoso,
     });
   } catch (error: any) {
     console.error("Error en API Agente Chat:", error);

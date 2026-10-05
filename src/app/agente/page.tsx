@@ -62,6 +62,7 @@ export default function AgenteChatPage() {
   const [mostrarConfig, setMostrarConfig] = useState(false);
   const [indicaciones, setIndicaciones] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [modelo, setModelo] = useState("gemini-3.6-flash");
   const [guardadoExitoso, setGuardadoExitoso] = useState(false);
 
   // Archivo Adjunto en el Chat
@@ -81,6 +82,9 @@ export default function AgenteChatPage() {
 
     const savedKey = localStorage.getItem("gemini_api_key");
     if (savedKey) setApiKey(savedKey);
+
+    const savedModelo = localStorage.getItem("gemini_selected_model");
+    if (savedModelo) setModelo(savedModelo);
 
     const savedHistory = localStorage.getItem("gemini_chat_history");
     if (savedHistory) {
@@ -129,6 +133,7 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
   const handleGuardarConfiguracion = (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem("gemini_custom_instructions", indicaciones);
+    localStorage.setItem("gemini_selected_model", modelo);
     if (apiKey.trim()) {
       localStorage.setItem("gemini_api_key", apiKey.trim());
     } else {
@@ -222,6 +227,7 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
           mensaje: textoEnvio,
           historial: historialPayload.slice(-8),
           indicacionesPersonalizadas: indicaciones,
+          modelo: modelo,
           adjunto: adjuntoActual
             ? {
                 nombre: adjuntoActual.nombre,
@@ -277,9 +283,14 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
           <div className="truncate">
             <div className="flex items-center gap-2">
               <h2 className="text-xs sm:text-sm font-bold tracking-tight truncate">Agente Analista</h2>
-              <span className="px-1.5 sm:px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-400/30 text-[9px] sm:text-[10px] font-bold rounded-full uppercase tracking-wider shrink-0">
-                Gemini 3.8
-              </span>
+              <button
+                type="button"
+                onClick={() => setMostrarConfig(true)}
+                title="Clic para cambiar modelo en configuración"
+                className="px-2 py-0.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[9px] sm:text-[10px] font-bold rounded-full uppercase tracking-wider shrink-0 transition"
+              >
+                {modelo === "gemini-3.8-flash" ? "Gemini 3.8 Flash" : modelo === "gemini-3.5-flash-lite" ? "Gemini 3.5 Lite" : "Gemini 3.6 Flash"}
+              </button>
             </div>
             <p className="text-[10px] sm:text-[11px] text-slate-300 flex items-center gap-1.5 truncate">
               <Database className="w-3 h-3 text-emerald-400 shrink-0" />
@@ -520,6 +531,31 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
                 />
                 <p className="text-[11px] text-slate-400 mt-1">
                   Estas instrucciones se inyectan automáticamente en el prompt del sistema de Gemini.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Modelo de Inteligencia Artificial:</span>
+                </label>
+                <select
+                  value={modelo}
+                  onChange={(e) => setModelo(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 font-medium"
+                >
+                  <option value="gemini-3.6-flash">
+                    ⚡ Gemini 3.6 Flash (Recomendado — Alta disponibilidad y rapidez inmediata)
+                  </option>
+                  <option value="gemini-3.5-flash-lite">
+                    🚀 Gemini 3.5 Flash Lite (Ultra liviano — menor latencia)
+                  </option>
+                  <option value="gemini-3.8-flash">
+                    ✨ Gemini 3.8 Flash (Última versión — sujeto a picos de demanda de Google)
+                  </option>
+                </select>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Si el modelo seleccionado experimenta alta demanda en los servidores de Google, el sistema pasa automáticamente al siguiente modelo Flash sin interrumpir tu chat.
                 </p>
               </div>
 
