@@ -62,7 +62,7 @@ export default function AgenteChatPage() {
   const [mostrarConfig, setMostrarConfig] = useState(false);
   const [indicaciones, setIndicaciones] = useState("");
   const [apiKey, setApiKey] = useState("");
-  const [modelo, setModelo] = useState("gemini-3.6-flash");
+  const [modelo, setModelo] = useState("gemini-3.5-flash-lite");
   const [guardadoExitoso, setGuardadoExitoso] = useState(false);
 
   // Archivo Adjunto en el Chat
@@ -289,13 +289,13 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
                 title="Clic para cambiar modelo en configuración"
                 className="px-2 py-0.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[9px] sm:text-[10px] font-bold rounded-full uppercase tracking-wider shrink-0 transition"
               >
-                {modelo === "gemini-3.8-flash"
-                  ? "Gemini 3.8 Flash"
+                {modelo === "gemini-3.5-flash-lite"
+                  ? "Gemini 3.5 Lite (500 RPD)"
                   : modelo === "gemini-3.5-flash"
-                  ? "Gemini 3.5 Flash"
-                  : modelo === "gemini-3.5-flash-lite"
-                  ? "Gemini 3.5 Lite"
-                  : "Gemini 3.6 Flash"}
+                  ? "Gemini 3.5 Flash (20 RPD)"
+                  : modelo === "gemini-3.6-flash"
+                  ? "Gemini 3.6 Flash (20 RPD)"
+                  : "Gemini 3.8 Flash"}
               </button>
             </div>
             <p className="text-[10px] sm:text-[11px] text-slate-300 flex items-center gap-1.5 truncate">
@@ -550,17 +550,17 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
                   onChange={(e) => setModelo(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 font-medium"
                 >
+                  <option value="gemini-3.5-flash-lite">
+                    🚀 Gemini 3.5 Flash Lite (Recomendado — 500 peticiones RPD al día)
+                  </option>
                   <option value="gemini-3.5-flash">
-                    💎 Gemini 3.5 Flash (Mayor cuota de peticiones RPD diarias)
+                    💎 Gemini 3.5 Flash (Límite: 20 peticiones RPD al día)
                   </option>
                   <option value="gemini-3.6-flash">
-                    ⚡ Gemini 3.6 Flash (Alta capacidad analítica)
-                  </option>
-                  <option value="gemini-3.5-flash-lite">
-                    🚀 Gemini 3.5 Flash Lite (Ultra liviano — menor latencia)
+                    ⚡ Gemini 3.6 Flash (Límite: 20 peticiones RPD al día)
                   </option>
                   <option value="gemini-3.8-flash">
-                    ✨ Gemini 3.8 Flash (Última versión — sujeto a picos de demanda de Google)
+                    ✨ Gemini 3.8 Flash (Última versión — sujeto a picos de demanda)
                   </option>
                 </select>
                 <p className="text-[11px] text-slate-400 mt-1">

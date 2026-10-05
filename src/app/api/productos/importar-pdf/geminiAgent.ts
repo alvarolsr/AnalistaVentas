@@ -111,7 +111,7 @@ Ignora portadas decorativas, tablas de condiciones bancarias, términos y condic
       },
     };
 
-    const modelosIntentar = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash"];
+    const modelosIntentar = ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.8-flash"];
     let response;
     let ultimoError: any = null;
 
