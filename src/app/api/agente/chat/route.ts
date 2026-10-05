@@ -185,12 +185,12 @@ REGLAS DE RESPUESTA:
     });
 
     // 3. Invocar al Agente Gemini con prioridad y fallback de alta disponibilidad
-    const modeloSolicitado = (body.modelo as string) || "gemini-3.6-flash";
+    const modeloSolicitado = (body.modelo as string) || "gemini-3.5-flash";
     const candidatos = [
       modeloSolicitado,
+      "gemini-3.5-flash",
       "gemini-3.6-flash",
       "gemini-3.5-flash-lite",
-      "gemini-3.5-flash",
       "gemini-3.8-flash",
     ];
     const modelosIntentar = Array.from(new Set(candidatos));
