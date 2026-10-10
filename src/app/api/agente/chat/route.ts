@@ -90,6 +90,21 @@ export async function POST(req: Request) {
         .map((sb) => `- [${sb.codigoSku}] ${sb.nombre}: Stock actual ${sb.stockActual}`)
         .join("\n");
 
+      const metricasMensuales = await DataService.getClientesMetricasMensuales();
+      const resumenMetricasMensuales = metricasMensuales
+        .map((m, idx) => {
+          const mesesDetalle = Object.entries(m.historialPorMes)
+            .map(([per, val]) => `${per}: $${val.total.toLocaleString()} (${val.ordenes} ord)`)
+            .join(", ");
+          return `${idx + 1}. ${m.nombre} (${m.empresa || "Particular"} | RIF: ${m.rif || "N/A"}):
+   - Promedio Mensual: $${m.promedioMensual.toLocaleString()} / mes (Periodo: ${m.primerMes} a ${m.ultimoMes}, ${m.mesesPeriodoTotal} meses totales)
+   - Promedio por Mes con Compra: $${m.promedioPorMesActivo.toLocaleString()} / mes (${m.mesesConCompra} meses activos)
+   - Frecuencia: ${m.ordenesPorMes} órdenes/mes | Ticket Promedio: $${m.ticketPromedio.toLocaleString()}
+   - Último Mes Facturado (${m.ultimoMes}): $${m.ultimoMesFacturado.toLocaleString()} (Tendencia: ${m.tendenciaUltimoMesPct > 0 ? "+" : ""}${m.tendenciaUltimoMesPct}% vs promedio)
+   - Historial mensual: [${mesesDetalle}]`;
+        })
+        .join("\n\n");
+
       contextoDb = `
 DATOS ACTUALES DEL SISTEMA (Neon PostgreSQL):
 - Total Ventas Facturadas: $${stats.kpis.totalVentas.toLocaleString()}
@@ -97,6 +112,9 @@ DATOS ACTUALES DEL SISTEMA (Neon PostgreSQL):
 - Total Clientes Registrados: ${stats.kpis.totalClientes}
 - Total Productos en Portafolio: ${stats.kpis.totalProductos}
 - Total Órdenes de Compra: ${stats.kpis.totalCompras}
+
+COMPORTAMIENTO Y PROMEDIOS MENSUALES DE CLIENTES:
+${resumenMetricasMensuales || "Sin historial suficiente de compras"}
 
 TOP CLIENTES POR FACTURACIÓN:
 ${resumenTopClientes || "Sin ventas aún"}
@@ -135,7 +153,15 @@ REGLAS DE RESPUESTA:
 - Apóyate en los datos reales suministrados arriba (clientes con sus RIFs, SKUs, marcas, existencias, precios y métricas de venta).
 - Si el usuario te pide un cálculo o comparativa, sé preciso y explica el razonamiento.
 - Emplea formato Markdown con negritas, listas o tablas cuando ayude a estructurar mejor la información.
-- Si el usuario te da indicaciones personalizadas adicionales durante la conversación, adáptate de inmediato a sus preferencias de análisis y estilo.`;
+- Si el usuario te da indicaciones personalizadas adicionales durante la conversación, adáptate de inmediato a sus preferencias de análisis y estilo.
+
+INSTRUCCIONES PARA ANÁLISIS DE CLIENTES POR PROMEDIOS MENSUALES:
+- Cuando el usuario te consulte o solicite analizar clientes según promedios mensuales o comportamiento temporal:
+  1. Utiliza las métricas detalladas del bloque 'COMPORTAMIENTO Y PROMEDIOS MENSUALES DE CLIENTES'.
+  2. Diferencia entre el 'Promedio Mensual Global' (distribuido a lo largo de todo el periodo desde su primera compra) y el 'Promedio por Mes Activo' (solo meses donde compró efectivamente).
+  3. Analiza la tendencia y regularidad: revisa el historial mes a mes e identifica meses pico (máximos de compra) y meses valle o caídas.
+  4. Alerta sobre caídas de consumo recientes: resalta si en los últimos meses facturó significativamente por debajo de su promedio histórico.
+  5. Segmenta la cartera según su potencial de consumo mensual y propone estrategias comerciales proactivas de seguimiento y reactivación.`;
 
     // 3. Invocar al Agente Gemini con el modelo gemini-3.8-flash
     const ai = new GoogleGenAI({ apiKey });

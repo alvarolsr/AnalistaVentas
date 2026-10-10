@@ -33,6 +33,26 @@ export interface CompraCompleta extends Compra {
   detalles: DetalleConProducto[];
 }
 
+export interface ClienteMetricaMensual {
+  clienteId: string;
+  nombre: string;
+  empresa: string | null;
+  rif: string | null;
+  totalHistorico: number;
+  totalOrdenes: number;
+  primerMes: string;
+  ultimoMes: string;
+  mesesConCompra: number;
+  mesesPeriodoTotal: number;
+  promedioMensual: number;
+  promedioPorMesActivo: number;
+  ordenesPorMes: number;
+  ticketPromedio: number;
+  ultimoMesFacturado: number;
+  tendenciaUltimoMesPct: number;
+  historialPorMes: Record<string, { total: number; ordenes: number }>;
+}
+
 let mockClientes: Cliente[] = [
   {
     id: "c1-techcorp",
@@ -804,6 +824,8 @@ export const DataService = {
     // Alertas de stock bajo (menor o igual a 10 unidades)
     const stockBajo = productosList.filter((p) => p.stockActual <= 10 && p.activo);
 
+    const metricasMensualesClientes = await this.getClientesMetricasMensuales();
+
     return {
       kpis: {
         totalVentas,
@@ -815,8 +837,118 @@ export const DataService = {
       topClientes,
       topProductos,
       stockBajo,
+      metricasMensualesClientes,
       comprasRecientes: comprasList.slice(0, 8),
       isNeonConnected: isNeonConfigured,
     };
+  },
+
+  async getClientesMetricasMensuales(): Promise<ClienteMetricaMensual[]> {
+    const comprasList = await this.getCompras();
+    const comprasValidas = comprasList
+      .filter((c) => c.estado === "completada")
+      .sort((a, b) => new Date(a.fechaCompra).getTime() - new Date(b.fechaCompra).getTime());
+
+    const clientesMap = new Map<
+      string,
+      {
+        clienteId: string;
+        nombre: string;
+        empresa: string | null;
+        rif: string | null;
+        totalHistorico: number;
+        totalOrdenes: number;
+        meses: Record<string, { total: number; ordenes: number }>;
+        primerPeriodo: string;
+        ultimoPeriodo: string;
+      }
+    >();
+
+    for (const c of comprasValidas) {
+      const fecha = new Date(c.fechaCompra);
+      const anio = fecha.getFullYear();
+      const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+      const periodo = `${anio}-${mes}`;
+      const total = Number(c.total);
+
+      if (!clientesMap.has(c.clienteId)) {
+        clientesMap.set(c.clienteId, {
+          clienteId: c.clienteId,
+          nombre: c.clienteNombre,
+          empresa: c.clienteEmpresa || null,
+          rif: null,
+          totalHistorico: 0,
+          totalOrdenes: 0,
+          meses: {},
+          primerPeriodo: periodo,
+          ultimoPeriodo: periodo,
+        });
+      }
+
+      const data = clientesMap.get(c.clienteId)!;
+      data.totalHistorico += total;
+      data.totalOrdenes += 1;
+      data.ultimoPeriodo = periodo;
+
+      if (!data.meses[periodo]) {
+        data.meses[periodo] = { total: 0, ordenes: 0 };
+      }
+      data.meses[periodo].total += total;
+      data.meses[periodo].ordenes += 1;
+    }
+
+    try {
+      const clientesList = await this.getClientes();
+      const rifMap = new Map(clientesList.map((cl) => [cl.id, cl.rif]));
+      for (const [id, data] of clientesMap.entries()) {
+        data.rif = rifMap.get(id) || null;
+      }
+    } catch {
+      // Ignorar si falla lectura de clientes
+    }
+
+    const resultado: ClienteMetricaMensual[] = [];
+    for (const [, c] of clientesMap.entries()) {
+      const periodosConCompra = Object.keys(c.meses).sort();
+      const cantMesesActivos = periodosConCompra.length;
+
+      const [pAnio, pMes] = c.primerPeriodo.split("-").map(Number);
+      const [uAnio, uMes] = c.ultimoPeriodo.split("-").map(Number);
+      const mesesRango = Math.max(1, (uAnio - pAnio) * 12 + (uMes - pMes) + 1);
+
+      const promedioMensual = Math.round((c.totalHistorico / mesesRango) * 100) / 100;
+      const promedioPorMesActivo = Math.round((c.totalHistorico / cantMesesActivos) * 100) / 100;
+      const ordenesPorMes = Math.round((c.totalOrdenes / mesesRango) * 10) / 10;
+      const ticketPromedio = Math.round((c.totalHistorico / c.totalOrdenes) * 100) / 100;
+
+      const ultimoMesData = c.meses[c.ultimoPeriodo];
+      const facturacionUltimoMes = ultimoMesData ? ultimoMesData.total : 0;
+      const tendencia =
+        promedioMensual > 0
+          ? Math.round(((facturacionUltimoMes - promedioMensual) / promedioMensual) * 1000) / 10
+          : 0;
+
+      resultado.push({
+        clienteId: c.clienteId,
+        nombre: c.nombre,
+        empresa: c.empresa,
+        rif: c.rif,
+        totalHistorico: Math.round(c.totalHistorico * 100) / 100,
+        totalOrdenes: c.totalOrdenes,
+        primerMes: c.primerPeriodo,
+        ultimoMes: c.ultimoPeriodo,
+        mesesConCompra: cantMesesActivos,
+        mesesPeriodoTotal: mesesRango,
+        promedioMensual,
+        promedioPorMesActivo,
+        ordenesPorMes,
+        ticketPromedio,
+        ultimoMesFacturado: Math.round(facturacionUltimoMes * 100) / 100,
+        tendenciaUltimoMesPct: tendencia,
+        historialPorMes: c.meses,
+      });
+    }
+
+    return resultado.sort((a, b) => b.promedioMensual - a.promedioMensual);
   },
 };

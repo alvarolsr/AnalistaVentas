@@ -40,6 +40,7 @@ interface Mensaje {
 }
 
 const PREGUNTAS_SUGERIDAS = [
+  "Analiza los clientes según su promedio mensual y regularidad",
   "¿Cuáles son los 3 clientes con mayor facturación?",
   "¿Qué productos tienen bajo inventario y requieren reposición?",
   "Recomiéndame una estrategia para incrementar el ticket promedio",
