@@ -24,7 +24,8 @@ import {
   Package,
   Clock,
   ExternalLink,
-  CreditCard
+  CreditCard,
+  RefreshCw
 } from "lucide-react";
 import { type Cliente } from "@/db/schema";
 import { type CompraCompleta } from "@/db/service";
@@ -58,8 +59,8 @@ export default function ClientesPage() {
     try {
       setLoading(true);
       const [resClientes, resCompras] = await Promise.all([
-        fetch("/api/clientes"),
-        fetch("/api/compras"),
+        fetch("/api/clientes", { cache: "no-store" }),
+        fetch("/api/compras", { cache: "no-store" }),
       ]);
       const [jsonClientes, jsonCompras] = await Promise.all([
         resClientes.json(),
@@ -148,7 +149,16 @@ export default function ClientesPage() {
 
   // Datos para el historial del cliente seleccionado
   const comprasDelClienteSeleccionado = clienteHistorial
-    ? compras.filter((c) => c.clienteId === clienteHistorial.id)
+    ? compras.filter(
+        (c) =>
+          c.clienteId === clienteHistorial.id ||
+          (c.clienteNombre &&
+            clienteHistorial.nombre &&
+            c.clienteNombre.trim().toLowerCase() === clienteHistorial.nombre.trim().toLowerCase()) ||
+          (c.clienteRif &&
+            clienteHistorial.rif &&
+            c.clienteRif.trim().toLowerCase() === clienteHistorial.rif.trim().toLowerCase())
+      )
     : [];
 
   const comprasFiltradasHistorial = comprasDelClienteSeleccionado.filter((c) => {
@@ -224,13 +234,25 @@ export default function ClientesPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Nuevo Cliente</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fetchData()}
+            disabled={loading}
+            title="Recargar clientes y compras"
+            className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-3 py-2.5 rounded-xl border border-slate-200 shadow-xs transition disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">Actualizar</span>
+          </button>
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nuevo Cliente</span>
+          </button>
+        </div>
       </div>
 
       {alerta && (
@@ -264,7 +286,16 @@ export default function ClientesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {clientesFiltrados.map((cliente) => {
-            const comprasCliente = compras.filter((c) => c.clienteId === cliente.id);
+            const comprasCliente = compras.filter(
+              (c) =>
+                c.clienteId === cliente.id ||
+                (c.clienteNombre &&
+                  cliente.nombre &&
+                  c.clienteNombre.trim().toLowerCase() === cliente.nombre.trim().toLowerCase()) ||
+                (c.clienteRif &&
+                  cliente.rif &&
+                  c.clienteRif.trim().toLowerCase() === cliente.rif.trim().toLowerCase())
+            );
             const totalGastadoCliente = comprasCliente
               .filter((c) => c.estado === "completada")
               .reduce((sum, c) => sum + Number(c.total || 0), 0);

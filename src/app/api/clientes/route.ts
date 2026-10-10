@@ -6,7 +6,11 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const clientes = await DataService.getClientes();
-    return NextResponse.json(clientes);
+    return NextResponse.json(clientes, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+      },
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Error al obtener clientes" }, { status: 500 });
   }

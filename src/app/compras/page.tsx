@@ -52,9 +52,9 @@ export default function ComprasPage() {
     try {
       setLoading(true);
       const [resCompras, resClientes, resProductos] = await Promise.all([
-        fetch("/api/compras"),
-        fetch("/api/clientes"),
-        fetch("/api/productos"),
+        fetch("/api/compras", { cache: "no-store" }),
+        fetch("/api/clientes", { cache: "no-store" }),
+        fetch("/api/productos", { cache: "no-store" }),
       ]);
 
       const [jsonCompras, jsonClientes, jsonProductos] = await Promise.all([

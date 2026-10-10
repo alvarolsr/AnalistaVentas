@@ -6,7 +6,11 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const compras = await DataService.getCompras();
-    return NextResponse.json(compras);
+    return NextResponse.json(compras, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+      },
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Error al obtener compras" }, { status: 500 });
   }

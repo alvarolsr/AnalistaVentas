@@ -30,6 +30,7 @@ export interface DetalleConProducto {
 export interface CompraCompleta extends Compra {
   clienteNombre: string;
   clienteEmpresa: string | null;
+  clienteRif?: string | null;
   detalles: DetalleConProducto[];
 }
 
@@ -641,6 +642,7 @@ export const DataService = {
           ...compra,
           clienteNombre: compra.cliente.nombre,
           clienteEmpresa: compra.cliente.empresa,
+          clienteRif: compra.cliente.rif || null,
           detalles: compra.detalles.map((d) => ({
             id: d.id,
             productoId: d.productoId,
