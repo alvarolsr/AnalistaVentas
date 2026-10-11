@@ -39,6 +39,30 @@ export async function POST(req: Request) {
   }
 }
 
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    if (!body.id) {
+      return NextResponse.json({ error: "ID de cliente requerido" }, { status: 400 });
+    }
+
+    const { id, ...data } = body;
+    const actualizado = await DataService.updateCliente(id, {
+      ...(data.nombre !== undefined && { nombre: data.nombre.trim() }),
+      ...(data.rif !== undefined && { rif: data.rif ? data.rif.trim().toUpperCase() : null }),
+      ...(data.email !== undefined && { email: data.email.trim() }),
+      ...(data.telefono !== undefined && { telefono: data.telefono ? data.telefono.trim() : null }),
+      ...(data.empresa !== undefined && { empresa: data.empresa ? data.empresa.trim() : null }),
+      ...(data.direccion !== undefined && { direccion: data.direccion ? data.direccion.trim() : null }),
+      ...(data.notas !== undefined && { notas: data.notas ? data.notas.trim() : null }),
+    });
+
+    return NextResponse.json(actualizado);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Error al actualizar cliente" }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);

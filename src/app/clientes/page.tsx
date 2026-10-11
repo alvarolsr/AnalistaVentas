@@ -25,7 +25,8 @@ import {
   Clock,
   ExternalLink,
   CreditCard,
-  RefreshCw
+  RefreshCw,
+  Pencil
 } from "lucide-react";
 import { type Cliente } from "@/db/schema";
 import { type CompraCompleta } from "@/db/service";
@@ -36,6 +37,8 @@ export default function ClientesPage() {
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [clienteAEditar, setClienteAEditar] = useState<Cliente | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [alerta, setAlerta] = useState<string | null>(null);
 
@@ -44,8 +47,19 @@ export default function ClientesPage() {
   const [busquedaHistorial, setBusquedaHistorial] = useState("");
   const [comprasExpandidas, setComprasExpandidas] = useState<Record<string, boolean>>({});
 
-  // Form State
+  // Form State Creación
   const [form, setForm] = useState({
+    nombre: "",
+    rif: "",
+    email: "",
+    telefono: "",
+    empresa: "",
+    direccion: "",
+    notas: "",
+  });
+
+  // Form State Edición
+  const [formEdit, setFormEdit] = useState({
     nombre: "",
     rif: "",
     email: "",
@@ -81,12 +95,60 @@ export default function ClientesPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsModalOpen(false);
+        setIsEditModalOpen(false);
         setClienteHistorial(null);
+        setClienteAEditar(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  const handleAbrirEdicion = (c: Cliente) => {
+    setClienteAEditar(c);
+    setFormEdit({
+      nombre: c.nombre || "",
+      rif: c.rif || "",
+      email: c.email || "",
+      telefono: c.telefono || "",
+      empresa: c.empresa || "",
+      direccion: c.direccion || "",
+      notas: c.notas || "",
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleGuardarEdicion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clienteAEditar) return;
+    setGuardando(true);
+    try {
+      const res = await fetch("/api/clientes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: clienteAEditar.id,
+          ...formEdit,
+        }),
+      });
+
+      if (res.ok) {
+        setIsEditModalOpen(false);
+        setClienteAEditar(null);
+        setAlerta("Cliente y perfil actualizados exitosamente");
+        setTimeout(() => setAlerta(null), 4000);
+        fetchData();
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || "Error al actualizar cliente");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error en la solicitud");
+    } finally {
+      setGuardando(false);
+    }
+  };
 
   const handleCrearCliente = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -331,13 +393,22 @@ export default function ClientesPage() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleEliminarCliente(cliente.id, cliente.nombre)}
-                      className="text-slate-400 hover:text-rose-600 p-1 rounded-lg transition"
-                      title="Eliminar cliente"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleAbrirEdicion(cliente)}
+                        className="text-slate-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition"
+                        title="Editar información y perfil del cliente"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleEliminarCliente(cliente.id, cliente.nombre)}
+                        className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition"
+                        title="Eliminar cliente"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mt-4 space-y-2 text-xs text-slate-600">
@@ -360,9 +431,16 @@ export default function ClientesPage() {
                   </div>
 
                   {cliente.notas && (
-                    <p className="mt-3 p-2.5 bg-slate-50 rounded-lg text-[11px] text-slate-500 italic border border-slate-100">
-                      "{cliente.notas}"
-                    </p>
+                    <div className="mt-3.5 p-3 bg-slate-50 rounded-xl text-xs text-slate-700 border border-slate-200/60 shadow-2xs">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-slate-700 text-[10px] uppercase tracking-wider flex items-center gap-1">
+                          Perfil Comercial:
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        {cliente.notas}
+                      </p>
+                    </div>
                   )}
 
                   {/* Resumen rápido de compras del cliente */}
@@ -450,6 +528,17 @@ export default function ClientesPage() {
                       </>
                     )}
                   </p>
+
+                  {clienteHistorial.notas && (
+                    <div className="mt-3 p-3 bg-blue-50/80 border border-blue-200/60 rounded-xl text-xs text-slate-700">
+                      <span className="font-bold text-blue-950 block mb-1 text-[11px] uppercase tracking-wider">
+                        Perfil & Descripción según Historial de Compras:
+                      </span>
+                      <p className="text-slate-700 text-xs leading-relaxed">
+                        {clienteHistorial.notas}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -850,6 +939,141 @@ export default function ClientesPage() {
                   className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition disabled:opacity-50"
                 >
                   {guardando ? "Guardando..." : "Registrar Cliente"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Cliente */}
+      {isEditModalOpen && clienteAEditar && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl relative animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setClienteAEditar(null);
+              }}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h2 className="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <Pencil className="w-4 h-4 text-blue-600" />
+              <span>Editar Información de Cliente</span>
+            </h2>
+            <p className="text-xs text-slate-500 mb-5">
+              Actualiza los datos o el perfil comercial basado en su historial de compras.
+            </p>
+
+            <form onSubmit={handleGuardarEdicion} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Nombre Completo / Razón Social <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formEdit.nombre}
+                  onChange={(e) => setFormEdit({ ...formEdit, nombre: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    RIF o Identificación
+                  </label>
+                  <input
+                    type="text"
+                    value={formEdit.rif}
+                    onChange={(e) => setFormEdit({ ...formEdit, rif: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Teléfono
+                  </label>
+                  <input
+                    type="text"
+                    value={formEdit.telefono}
+                    onChange={(e) => setFormEdit({ ...formEdit, telefono: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Correo Electrónico <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={formEdit.email}
+                  onChange={(e) => setFormEdit({ ...formEdit, email: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Empresa o Negocio
+                </label>
+                <input
+                  type="text"
+                  value={formEdit.empresa}
+                  onChange={(e) => setFormEdit({ ...formEdit, empresa: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Dirección Comercial / Entrega
+                </label>
+                <input
+                  type="text"
+                  value={formEdit.direccion}
+                  onChange={(e) => setFormEdit({ ...formEdit, direccion: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Descripción Comercial / Perfil según Historial
+                </label>
+                <textarea
+                  rows={4}
+                  placeholder="Resumen del perfil de compra, categorías frecuentes, promedio mensual..."
+                  value={formEdit.notas}
+                  onChange={(e) => setFormEdit({ ...formEdit, notas: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 leading-relaxed"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setClienteAEditar(null);
+                  }}
+                  className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={guardando}
+                  className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition disabled:opacity-50"
+                >
+                  {guardando ? "Guardando..." : "Guardar Cambios"}
                 </button>
               </div>
             </form>

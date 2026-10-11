@@ -400,6 +400,24 @@ export const DataService = {
     return nuevo;
   },
 
+  async updateCliente(id: string, data: Partial<Omit<Cliente, "id" | "creadoEn">>): Promise<Cliente | null> {
+    const db = getDb();
+    if (db) {
+      try {
+        const [updated] = await db.update(clientes).set(data).where(eq(clientes.id, id)).returning();
+        return updated || null;
+      } catch (err) {
+        console.error("Error actualizando cliente en Neon:", err);
+      }
+    }
+    const idx = mockClientes.findIndex((c) => c.id === id);
+    if (idx !== -1) {
+      mockClientes[idx] = { ...mockClientes[idx], ...data };
+      return mockClientes[idx];
+    }
+    return null;
+  },
+
   async deleteCliente(id: string): Promise<boolean> {
     const db = getDb();
     if (db) {
