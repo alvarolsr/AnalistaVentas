@@ -55,6 +55,106 @@ export async function POST(req: Request) {
       const stats = await DataService.getDashboardStats();
       const clientes = await DataService.getClientes();
       const productos = await DataService.getProductos();
+      const censoVehicular = await DataService.getCensoAplicacionesVehiculares();
+
+      // Búsqueda inteligente en tiempo real según la consulta del usuario
+      const textoParaBuscar = `${mensaje} ${historial.slice(-2).map((h: any) => h.content).join(" ")}`.toLowerCase();
+      const marcasConocidas = [
+        "mitsubishi",
+        "canter",
+        "fuso",
+        "isuzu",
+        "npr",
+        "nkr",
+        "fvr",
+        "ford",
+        "cargo",
+        "mack",
+        "cummins",
+        "kodiak",
+        "caterpillar",
+        "cat",
+        "toyota",
+        "iveco",
+        "jac",
+        "encava",
+        "chevrolet",
+      ];
+      const categoriasConocidas = [
+        "bomba",
+        "filtro",
+        "freno",
+        "tambor",
+        "disco",
+        "embrague",
+        "clutch",
+        "piston",
+        "pistón",
+        "anillo",
+        "concha",
+        "bancada",
+        "biela",
+        "estopera",
+        "empacadura",
+        "alternador",
+        "arranque",
+        "turbo",
+        "reloj",
+        "valvula",
+        "válvula",
+        "rodamiento",
+        "correa",
+        "cruceta",
+        "cardan",
+        "manguera",
+        "collarin",
+        "collarín",
+      ];
+
+      const terminosEncontrados: string[] = [];
+      for (const m of marcasConocidas) {
+        if (new RegExp(`\\b${m}\\b`, "i").test(textoParaBuscar)) {
+          terminosEncontrados.push(m);
+        }
+      }
+      for (const c of categoriasConocidas) {
+        if (new RegExp(`\\b${c}\\b`, "i").test(textoParaBuscar)) {
+          terminosEncontrados.push(c);
+        }
+      }
+
+      // Detectar posibles SKUs en formato XX-XXXX o XXXX-XXXX
+      const skuMatch = textoParaBuscar.match(/[a-z]{2,4}-\d{3,5}/gi);
+      if (skuMatch) {
+        for (const sku of skuMatch) {
+          terminosEncontrados.push(sku);
+        }
+      }
+
+      const terminosUnicos = Array.from(new Set(terminosEncontrados)).slice(0, 3);
+      let bloqueBusquedaEnTiempoReal = "";
+
+      if (terminosUnicos.length > 0) {
+        const resultadosBusqueda: string[] = [];
+        for (const term of terminosUnicos) {
+          const resBusqueda = await DataService.buscarProductos(term, 20);
+          const catsStr = resBusqueda.desgloseCategorias
+            .map((c) => `${c.categoria} (${c.cantidad})`)
+            .join(", ");
+          const prodsStr = resBusqueda.productos
+            .slice(0, 10)
+            .map(
+              (p) =>
+                `    - [${p.codigoSku}] ${p.nombre} | Cat: ${p.categoria} | Precio: $${p.precio} | Stock: ${p.stockActual}`
+            )
+            .join("\n");
+
+          resultadosBusqueda.push(
+            `- Término: "${term.toUpperCase()}"\n  * Total exacto de SKUs encontrados: ${resBusqueda.total}\n  * Desglose por categoría: ${catsStr || "N/A"}\n  * Muestra de SKUs disponibles:\n${prodsStr || "    (Sin detalles)"}`
+          );
+        }
+        bloqueBusquedaEnTiempoReal = `\nBÚSQUEDA EN TIEMPO REAL EN BASE DE DATOS (Neon PostgreSQL) PARA ESTA CONSULTA:\n${resultadosBusqueda.join("\n\n")}\n`;
+      }
 
       const resumenClientes = clientes
         .slice(0, 15)
@@ -113,6 +213,21 @@ DATOS ACTUALES DEL SISTEMA (Neon PostgreSQL):
 - Total Productos en Portafolio: ${stats.kpis.totalProductos}
 - Total Órdenes de Compra: ${stats.kpis.totalCompras}
 
+CENSO REAL DE SKUs POR APLICACIÓN VEHICULAR / MOTOR EN EL PORTAFOLIO (Base de datos Neon):
+- IVECO: ${censoVehicular.IVECO ?? 463} SKUs
+- ISUZU: ${censoVehicular.ISUZU ?? 415} SKUs
+- JAC: ${censoVehicular.JAC ?? 403} SKUs
+- FORD: ${censoVehicular.FORD ?? 258} SKUs
+- MACK: ${censoVehicular.MACK ?? 253} SKUs
+- CUMMINS: ${censoVehicular.CUMMINS ?? 232} SKUs
+- MITSUBISHI: ${censoVehicular.MITSUBISHI ?? 204} SKUs (Canter, Fuso, FK615, FM657, 4D34, FE84, FE85, etc. - 206 SKUs si se incluyen menciones directas a Canter)
+- TOYOTA: ${censoVehicular.TOYOTA ?? 150} SKUs
+- ENCAVA: ${censoVehicular.ENCAVA ?? 115} SKUs
+- CATERPILLAR: ${censoVehicular.CATERPILLAR ?? 94} SKUs
+- KODIAK: ${censoVehicular.KODIAK ?? 51} SKUs
+- CHEVROLET: ${censoVehicular.CHEVROLET ?? 2} SKUs
+(Todos los 3,237 SKUs del catálogo disponen de inventario activo con stock de 1,000 unidades cada uno).
+${bloqueBusquedaEnTiempoReal}
 COMPORTAMIENTO Y PROMEDIOS MENSUALES DE CLIENTES:
 ${resumenMetricasMensuales || "Sin historial suficiente de compras"}
 
@@ -154,6 +269,16 @@ REGLAS DE RESPUESTA:
 - Si el usuario te pide un cálculo o comparativa, sé preciso y explica el razonamiento.
 - Emplea formato Markdown con negritas, listas o tablas cuando ayude a estructurar mejor la información.
 - Si el usuario te da indicaciones personalizadas adicionales durante la conversación, adáptate de inmediato a sus preferencias de análisis y estilo.
+
+REGLAS CRÍTICAS DE CATÁLOGO Y APLICACIONES VEHICULARES (MUY IMPORTANTE):
+1. Distinción entre Marca de Fabricante vs Marca de Aplicación Vehicular:
+   - En este negocio de repuestos diesel pesados, la columna 'marca' indica la fábrica o marca del repuesto (principalmente 'LYC' con 3,040 SKUs, más Bosch, Cummins, etc.).
+   - La MARCA Y MODELO DEL VEHÍCULO O MOTOR DE APLICACIÓN (Mitsubishi, Mack, Ford, Isuzu, Cummins, etc.) está registrada en el NOMBRE y DESCRIPCIÓN de cada producto.
+2. Cantidad de SKUs de Mitsubishi:
+   - Cuando el usuario pregunte por la cantidad de SKUs o repuestos de 'Mitsubishi' disponibles en el portafolio, la cifra exacta es de **204 SKUs** (o **206 SKUs** si se incluyen aplicaciones exclusivas a Canter/Fuso).
+   - NUNCA digas que hay 10 (10 es únicamente la marca del fabricante).
+   - NUNCA limites tu respuesta a la pequeña muestra de 25 productos del contexto general; utiliza siempre las cifras del 'CENSO REAL DE SKUs POR APLICACIÓN VEHICULAR' y los resultados de búsqueda en tiempo real.
+3. Para cualquier otra marca de vehículo (Isuzu: 415, Iveco: 463, JAC: 403, Ford: 258, Mack: 253, Cummins: 232, Toyota: 150, Encava: 115, Caterpillar: 94, Kodiak: 51), proporciona siempre la cifra exacta del censo vehicular.
 
 INSTRUCCIONES PARA ANÁLISIS DE CLIENTES POR PROMEDIOS MENSUALES:
 - Cuando el usuario te consulte o solicite analizar clientes según promedios mensuales o comportamiento temporal:

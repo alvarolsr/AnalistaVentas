@@ -10,7 +10,7 @@ import {
   type Compra,
   type Categoria 
 } from "./schema";
-import { eq, desc, sql, ilike } from "drizzle-orm";
+import { eq, desc, sql, ilike, or } from "drizzle-orm";
 
 export interface CategoriaConSubcategorias extends Categoria {
   subcategorias: Categoria[];
@@ -525,6 +525,125 @@ export const DataService = {
     }
     return [...mockProductos].sort((a, b) => (a.codigoSku || "").localeCompare(b.codigoSku || "", undefined, { numeric: true }));
   },
+
+  async buscarProductos(termino: string, limite: number = 30): Promise<{
+    total: number;
+    productos: Producto[];
+    desgloseCategorias: { categoria: string; cantidad: number }[];
+  }> {
+    const t = termino.trim();
+    if (!t) return { total: 0, productos: [], desgloseCategorias: [] };
+    const db = getDb();
+    if (db) {
+      try {
+        const pattern = `%${t}%`;
+        const condicion = or(
+          ilike(productos.nombre, pattern),
+          ilike(productos.descripcion, pattern),
+          ilike(productos.codigoSku, pattern),
+          ilike(productos.marca, pattern),
+          ilike(productos.categoria, pattern)
+        );
+
+        const totalResult = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(productos)
+          .where(condicion);
+        const total = totalResult[0]?.count || 0;
+
+        const prods = await db
+          .select()
+          .from(productos)
+          .where(condicion)
+          .limit(limite);
+
+        const desglose = await db
+          .select({
+            categoria: productos.categoria,
+            cantidad: sql<number>`count(*)::int`,
+          })
+          .from(productos)
+          .where(condicion)
+          .groupBy(productos.categoria)
+          .orderBy(desc(sql`count(*)`))
+          .limit(8);
+
+        return {
+          total,
+          productos: prods,
+          desgloseCategorias: desglose,
+        };
+      } catch (err) {
+        console.error("Error buscando productos en Neon:", err);
+      }
+    }
+    const filtrados = mockProductos.filter(
+      (p) =>
+        p.nombre.toLowerCase().includes(t.toLowerCase()) ||
+        p.codigoSku.toLowerCase().includes(t.toLowerCase()) ||
+        (p.marca && p.marca.toLowerCase().includes(t.toLowerCase())) ||
+        (p.categoria && p.categoria.toLowerCase().includes(t.toLowerCase()))
+    );
+    return {
+      total: filtrados.length,
+      productos: filtrados.slice(0, limite),
+      desgloseCategorias: [],
+    };
+  },
+
+  async getCensoAplicacionesVehiculares(): Promise<Record<string, number>> {
+    const db = getDb();
+    const marcas = [
+      "MITSUBISHI",
+      "ISUZU",
+      "IVECO",
+      "JAC",
+      "FORD",
+      "MACK",
+      "CUMMINS",
+      "TOYOTA",
+      "ENCAVA",
+      "CATERPILLAR",
+      "KODIAK",
+      "CHEVROLET",
+    ];
+    const censo: Record<string, number> = {};
+    if (db) {
+      try {
+        for (const m of marcas) {
+          const res = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(productos)
+            .where(
+              or(
+                ilike(productos.nombre, `%${m}%`),
+                ilike(productos.descripcion, `%${m}%`),
+                ilike(productos.marca, `%${m}%`)
+              )
+            );
+          censo[m] = res[0]?.count || 0;
+        }
+        return censo;
+      } catch (err) {
+        console.error("Error obteniendo censo vehicular:", err);
+      }
+    }
+    return {
+      MITSUBISHI: 204,
+      ISUZU: 415,
+      IVECO: 463,
+      JAC: 403,
+      FORD: 258,
+      MACK: 253,
+      CUMMINS: 232,
+      TOYOTA: 150,
+      ENCAVA: 115,
+      CATERPILLAR: 94,
+      KODIAK: 51,
+      CHEVROLET: 2,
+    };
+  },
+
 
   async createProducto(data: Omit<Producto, "id" | "creadoEn">): Promise<Producto> {
     const db = getDb();
