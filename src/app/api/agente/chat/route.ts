@@ -157,10 +157,10 @@ export async function POST(req: Request) {
       }
 
       const resumenClientes = clientes
-        .slice(0, 15)
+        .slice(0, 20)
         .map(
           (c) =>
-            `- ${c.nombre} (${c.empresa || "Particular"}), RIF: ${c.rif || "No registrado"}, Email: ${c.email || "N/A"}`
+            `- ${c.nombre} (${c.empresa || "Particular"}), RIF: ${c.rif || "No registrado"}, Email: ${c.email || "N/A"}, Límite de Crédito: $${Number(c.limiteCredito || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
         )
         .join("\n");
 
@@ -197,6 +197,7 @@ export async function POST(req: Request) {
             .map(([per, val]) => `${per}: $${val.total.toLocaleString()} (${val.ordenes} ord)`)
             .join(", ");
           return `${idx + 1}. ${m.nombre} (${m.empresa || "Particular"} | RIF: ${m.rif || "N/A"}):
+   - Límite de Crédito: $${Number(m.limiteCredito || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
    - Promedio Mensual: $${m.promedioMensual.toLocaleString()} / mes (Periodo: ${m.primerMes} a ${m.ultimoMes}, ${m.mesesPeriodoTotal} meses totales)
    - Promedio por Mes con Compra: $${m.promedioPorMesActivo.toLocaleString()} / mes (${m.mesesConCompra} meses activos)
    - Frecuencia: ${m.ordenesPorMes} órdenes/mes | Ticket Promedio: $${m.ticketPromedio.toLocaleString()}

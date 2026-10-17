@@ -31,6 +31,10 @@ export async function POST(req: Request) {
       empresa: body.empresa ? body.empresa.trim() : null,
       direccion: body.direccion ? body.direccion.trim() : null,
       notas: body.notas ? body.notas.trim() : null,
+      limiteCredito:
+        body.limiteCredito !== undefined && body.limiteCredito !== "" && body.limiteCredito !== null
+          ? String(body.limiteCredito)
+          : "0.00",
     });
 
     return NextResponse.json(nuevoCliente, { status: 201 });
@@ -55,6 +59,10 @@ export async function PUT(req: Request) {
       ...(data.empresa !== undefined && { empresa: data.empresa ? data.empresa.trim() : null }),
       ...(data.direccion !== undefined && { direccion: data.direccion ? data.direccion.trim() : null }),
       ...(data.notas !== undefined && { notas: data.notas ? data.notas.trim() : null }),
+      ...(data.limiteCredito !== undefined && {
+        limiteCredito:
+          data.limiteCredito !== "" && data.limiteCredito !== null ? String(data.limiteCredito) : "0.00",
+      }),
     });
 
     return NextResponse.json(actualizado);

@@ -51,6 +51,7 @@ export interface ClienteMetricaMensual {
   ticketPromedio: number;
   ultimoMesFacturado: number;
   tendenciaUltimoMesPct: number;
+  limiteCredito?: number | null;
   historialPorMes: Record<string, { total: number; ordenes: number }>;
 }
 
@@ -63,6 +64,7 @@ let mockClientes: Cliente[] = [
     telefono: "+58 412 555-0101",
     empresa: "TechCorp Solutions",
     direccion: "Av. Francisco de Miranda, Torre Delta, Piso 8",
+    limiteCredito: "5000.00",
     notas: "Cliente preferencial corporativo, compras de TI a gran escala.",
     creadoEn: new Date("2024-01-15T10:00:00Z"),
   },
@@ -74,6 +76,7 @@ let mockClientes: Cliente[] = [
     telefono: "+58 414 789-2233",
     empresa: "Distribuidora del Norte",
     direccion: "Zona Industrial Los Cortijos, Galpón 14",
+    limiteCredito: "3000.00",
     notas: "Pagos puntuales por transferencia bancaria.",
     creadoEn: new Date("2024-02-10T14:30:00Z"),
   },
@@ -85,6 +88,7 @@ let mockClientes: Cliente[] = [
     telefono: "+58 424 991-8844",
     empresa: "Supermercados Andinos C.A.",
     direccion: "Centro Empresarial El Rosal, Ofic. 302",
+    limiteCredito: "2500.00",
     notas: "Cadena regional de retail con renovación de equipos semestral.",
     creadoEn: new Date("2024-03-05T09:15:00Z"),
   },
@@ -96,6 +100,7 @@ let mockClientes: Cliente[] = [
     telefono: "+58 416 333-7722",
     empresa: "Consultora Apex",
     direccion: "Calle Negrín, Centro Profesional Sabana Grande",
+    limiteCredito: "4000.00",
     notas: "Contratos de consultoría y estaciones de trabajo de alto rendimiento.",
     creadoEn: new Date("2024-04-18T16:00:00Z"),
   },
@@ -107,6 +112,7 @@ let mockClientes: Cliente[] = [
     telefono: "+58 412 112-9900",
     empresa: "Innova Retail",
     direccion: "Centro San Ignacio, Nivel Jardín",
+    limiteCredito: "1500.00",
     notas: "Interesado en periféricos y monitores ultra panorámicos.",
     creadoEn: new Date("2024-05-22T11:45:00Z"),
   },
@@ -995,6 +1001,7 @@ export const DataService = {
         nombre: string;
         empresa: string | null;
         rif: string | null;
+        limiteCredito: number | null;
         totalHistorico: number;
         totalOrdenes: number;
         meses: Record<string, { total: number; ordenes: number }>;
@@ -1016,6 +1023,7 @@ export const DataService = {
           nombre: c.clienteNombre,
           empresa: c.clienteEmpresa || null,
           rif: null,
+          limiteCredito: null,
           totalHistorico: 0,
           totalOrdenes: 0,
           meses: {},
@@ -1039,8 +1047,12 @@ export const DataService = {
     try {
       const clientesList = await this.getClientes();
       const rifMap = new Map(clientesList.map((cl) => [cl.id, cl.rif]));
+      const limiteCreditoMap = new Map(
+        clientesList.map((cl) => [cl.id, cl.limiteCredito ? Number(cl.limiteCredito) : 0])
+      );
       for (const [id, data] of clientesMap.entries()) {
         data.rif = rifMap.get(id) || null;
+        data.limiteCredito = limiteCreditoMap.get(id) ?? null;
       }
     } catch {
       // Ignorar si falla lectura de clientes
@@ -1072,6 +1084,7 @@ export const DataService = {
         nombre: c.nombre,
         empresa: c.empresa,
         rif: c.rif,
+        limiteCredito: c.limiteCredito,
         totalHistorico: Math.round(c.totalHistorico * 100) / 100,
         totalOrdenes: c.totalOrdenes,
         primerMes: c.primerPeriodo,

@@ -56,6 +56,7 @@ export default function ClientesPage() {
     empresa: "",
     direccion: "",
     notas: "",
+    limiteCredito: "",
   });
 
   // Form State Edición
@@ -67,6 +68,7 @@ export default function ClientesPage() {
     empresa: "",
     direccion: "",
     notas: "",
+    limiteCredito: "",
   });
 
   const fetchData = async () => {
@@ -114,6 +116,8 @@ export default function ClientesPage() {
       empresa: c.empresa || "",
       direccion: c.direccion || "",
       notas: c.notas || "",
+      limiteCredito:
+        c.limiteCredito !== null && c.limiteCredito !== undefined ? String(c.limiteCredito) : "",
     });
     setIsEditModalOpen(true);
   };
@@ -170,6 +174,7 @@ export default function ClientesPage() {
           empresa: "",
           direccion: "",
           notas: "",
+          limiteCredito: "",
         });
         setAlerta("Cliente registrado exitosamente");
         setTimeout(() => setAlerta(null), 4000);
@@ -428,6 +433,17 @@ export default function ClientesPage() {
                         <span className="truncate">{cliente.direccion}</span>
                       </div>
                     )}
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>
+                        Límite de Crédito:{" "}
+                        <strong className="text-slate-800 font-mono">
+                          {cliente.limiteCredito && Number(cliente.limiteCredito) > 0
+                            ? `$${Number(cliente.limiteCredito).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : "$0.00"}
+                        </strong>
+                      </span>
+                    </div>
                   </div>
 
                   {cliente.notas && (
@@ -464,6 +480,20 @@ export default function ClientesPage() {
                         })}
                       </span>
                     )}
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium font-mono ${
+                        cliente.limiteCredito && Number(cliente.limiteCredito) > 0
+                          ? "bg-violet-50 text-violet-700 border border-violet-100"
+                          : "bg-slate-50 text-slate-500 border border-slate-200"
+                      }`}
+                      title="Límite de crédito asignado"
+                    >
+                      <CreditCard className="w-3 h-3" />
+                      Límite:{" "}
+                      {cliente.limiteCredito && Number(cliente.limiteCredito) > 0
+                        ? `$${Number(cliente.limiteCredito).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
+                        : "$0.00"}
+                    </span>
                   </div>
                 </div>
 
@@ -527,6 +557,14 @@ export default function ClientesPage() {
                         <span>{clienteHistorial.telefono}</span>
                       </>
                     )}
+                    <span>•</span>
+                    <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+                    <span>
+                      Límite:{" "}
+                      <strong className="text-slate-700 font-mono">
+                        ${Number(clienteHistorial.limiteCredito || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      </strong>
+                    </span>
                   </p>
 
                   {clienteHistorial.notas && (
@@ -562,7 +600,7 @@ export default function ClientesPage() {
             </div>
 
             {/* Métricas / KPIs del Cliente */}
-            <div className="p-4 sm:p-6 bg-white border-b border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 shrink-0">
+            <div className="p-4 sm:p-6 bg-white border-b border-slate-100 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 shrink-0">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
                 <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
                   <span>Inversión Total</span>
@@ -575,6 +613,24 @@ export default function ClientesPage() {
                   })}
                 </div>
                 <span className="text-[10px] text-emerald-600 font-medium">Facturado exitoso</span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
+                  <span>Límite de Crédito</span>
+                  <CreditCard className="w-4 h-4 text-violet-600" />
+                </div>
+                <div className="text-lg font-bold text-slate-900 font-mono">
+                  ${Number(clienteHistorial.limiteCredito || 0).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </div>
+                <span className="text-[10px] text-violet-600 font-medium">
+                  {clienteHistorial.limiteCredito && Number(clienteHistorial.limiteCredito) > 0
+                    ? "Límite fijado"
+                    : "Sin límite ($0.00)"}
+                </span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
@@ -886,17 +942,34 @@ export default function ClientesPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Empresa o Razón Social
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: TechCorp Solutions"
-                  value={form.empresa}
-                  onChange={(e) => setForm({ ...form, empresa: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Empresa o Razón Social
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: TechCorp Solutions"
+                    value={form.empresa}
+                    onChange={(e) => setForm({ ...form, empresa: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                    <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Límite de Crédito ($ USD)</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={form.limiteCredito}
+                    onChange={(e) => setForm({ ...form, limiteCredito: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 font-mono"
+                  />
+                </div>
               </div>
 
               <div>
@@ -1020,16 +1093,33 @@ export default function ClientesPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Empresa o Negocio
-                </label>
-                <input
-                  type="text"
-                  value={formEdit.empresa}
-                  onChange={(e) => setFormEdit({ ...formEdit, empresa: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Empresa o Negocio
+                  </label>
+                  <input
+                    type="text"
+                    value={formEdit.empresa}
+                    onChange={(e) => setFormEdit({ ...formEdit, empresa: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                    <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Límite de Crédito ($ USD)</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={formEdit.limiteCredito}
+                    onChange={(e) => setFormEdit({ ...formEdit, limiteCredito: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 font-mono"
+                  />
+                </div>
               </div>
 
               <div>

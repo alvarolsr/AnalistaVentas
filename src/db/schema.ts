@@ -9,6 +9,7 @@ export const clientes = pgTable("clientes", {
   telefono: varchar("telefono", { length: 50 }),
   empresa: varchar("empresa", { length: 255 }),
   direccion: text("direccion"),
+  limiteCredito: numeric("limite_credito", { precision: 12, scale: 2 }).default("0.00"),
   notas: text("notas"),
   creadoEn: timestamp("creado_en", { withTimezone: true }).defaultNow().notNull(),
 });
