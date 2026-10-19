@@ -46,6 +46,7 @@ export default function ClientesPage() {
   const [clienteHistorial, setClienteHistorial] = useState<Cliente | null>(null);
   const [busquedaHistorial, setBusquedaHistorial] = useState("");
   const [comprasExpandidas, setComprasExpandidas] = useState<Record<string, boolean>>({});
+  const [actualizandoEstadoCompraId, setActualizandoEstadoCompraId] = useState<string | null>(null);
 
   // Form State Creación
   const [form, setForm] = useState({
@@ -151,6 +152,33 @@ export default function ClientesPage() {
       alert("Error en la solicitud");
     } finally {
       setGuardando(false);
+    }
+  };
+
+  const handleCambiarEstadoCompra = async (compraId: string, nuevoEstado: string) => {
+    try {
+      setActualizandoEstadoCompraId(compraId);
+      const res = await fetch("/api/compras", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: compraId, estado: nuevoEstado }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Error al actualizar estado");
+      }
+
+      setCompras((prev) =>
+        prev.map((c) => (c.id === compraId ? { ...c, estado: nuevoEstado } : c))
+      );
+      setAlerta(`Estado de compra cambiado a "${nuevoEstado}".`);
+      setTimeout(() => setAlerta(null), 3500);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "No se pudo actualizar el estado de la compra.");
+    } finally {
+      setActualizandoEstadoCompraId(null);
     }
   };
 
@@ -779,18 +807,37 @@ export default function ClientesPage() {
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-                            <span
-                              className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${
-                                esCompletada
-                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                  : esPendiente
-                                  ? "bg-amber-50 text-amber-700 border border-amber-200"
-                                  : "bg-rose-50 text-rose-700 border border-rose-200"
-                              }`}
-                            >
-                              {compra.estado}
-                            </span>
+                          <div 
+                            className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="relative inline-flex items-center">
+                              <select
+                                value={compra.estado}
+                                disabled={actualizandoEstadoCompraId === compra.id}
+                                onChange={(e) => handleCambiarEstadoCompra(compra.id, e.target.value)}
+                                title="Cambiar estado entre Completada o Pendiente"
+                                className={`text-[11px] font-semibold pl-2 pr-5 py-0.5 rounded-full border cursor-pointer transition shadow-2xs appearance-none focus:outline-none focus:ring-1 focus:ring-offset-1 disabled:opacity-50 capitalize ${
+                                  compra.estado === "completada"
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                                    : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                                }`}
+                              >
+                                <option value="completada" className="bg-white text-emerald-800 font-medium">
+                                  Completada
+                                </option>
+                                <option value="pendiente" className="bg-white text-amber-800 font-medium">
+                                  Pendiente
+                                </option>
+                              </select>
+                              <div className="pointer-events-none absolute right-1 flex items-center">
+                                {actualizandoEstadoCompraId === compra.id ? (
+                                  <RefreshCw className="w-2.5 h-2.5 animate-spin text-slate-500" />
+                                ) : (
+                                  <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+                                )}
+                              </div>
+                            </div>
 
                             <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-md capitalize flex items-center gap-1">
                               <CreditCard className="w-3 h-3 text-slate-400" />

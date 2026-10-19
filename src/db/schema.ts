@@ -48,6 +48,8 @@ export const compras = pgTable("compras", {
   estado: varchar("estado", { length: 50 }).default("completada").notNull(), // completada, pendiente, cancelada
   metodoPago: varchar("metodo_pago", { length: 50 }).default("transferencia").notNull(), // efectivo, transferencia, tarjeta, credito
   notas: text("notas"),
+  archivoPdfNombre: varchar("archivo_pdf_nombre", { length: 255 }),
+  archivoPdfUrl: text("archivo_pdf_url"),
   creadoEn: timestamp("creado_en", { withTimezone: true }).defaultNow().notNull(),
 });
 

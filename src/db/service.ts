@@ -27,7 +27,7 @@ export interface DetalleConProducto {
   subtotal: number;
 }
 
-export interface CompraCompleta extends Compra {
+export interface CompraCompleta extends Omit<Compra, "archivoPdfNombre" | "archivoPdfUrl"> {
   clienteNombre: string;
   clienteEmpresa: string | null;
   clienteRif?: string | null;
@@ -907,6 +907,40 @@ export const DataService = {
 
     mockCompras.unshift(nuevaOrden);
     return nuevaOrden;
+  },
+
+  async updateCompraEstado(id: string, nuevoEstado: string): Promise<CompraCompleta | null> {
+    const estadoNormalizado = nuevoEstado.toLowerCase().trim();
+    if (!["pendiente", "completada", "cancelada"].includes(estadoNormalizado)) {
+      throw new Error("Estado no válido. Debe ser 'pendiente' o 'completada'.");
+    }
+
+    const db = getDb();
+    if (db) {
+      try {
+        await db
+          .update(compras)
+          .set({ estado: estadoNormalizado })
+          .where(eq(compras.id, id));
+
+        const lista = await this.getCompras();
+        const encontrada = lista.find((c) => c.id === id);
+        if (encontrada) return encontrada;
+      } catch (err) {
+        console.error("Error actualizando estado de compra en Neon:", err);
+      }
+    }
+
+    // Fallback local
+    const idx = mockCompras.findIndex((c) => c.id === id);
+    if (idx !== -1) {
+      mockCompras[idx] = {
+        ...mockCompras[idx],
+        estado: estadoNormalizado,
+      };
+      return mockCompras[idx];
+    }
+    return null;
   },
 
   // ESTADÍSTICAS DEL ANALISTA
