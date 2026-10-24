@@ -415,17 +415,8 @@ export const DataService = {
     if (data.rif) {
       const existente = await this.getClienteByRif(data.rif);
       if (existente) {
-        const camposAActualizar: Partial<Omit<Cliente, "id" | "creadoEn">> = {};
-        if (data.telefono && !existente.telefono) camposAActualizar.telefono = data.telefono;
-        if (data.direccion && !existente.direccion) camposAActualizar.direccion = data.direccion;
-        if (data.empresa && !existente.empresa) camposAActualizar.empresa = data.empresa;
-        if (data.nombre && existente.nombre.length < 8 && data.nombre.length > existente.nombre.length) {
-          camposAActualizar.nombre = data.nombre;
-        }
-        if (Object.keys(camposAActualizar).length > 0) {
-          await this.updateCliente(existente.id, camposAActualizar);
-        }
-        return (await this.getClienteById(existente.id)) || existente;
+        // El cliente ya existe: mantener intactos todos sus datos (contacto, crédito, dirección, etc.)
+        return existente;
       }
     }
 

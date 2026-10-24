@@ -48,15 +48,7 @@ export async function POST(req: Request) {
         const clientePorRif = await DataService.getClienteByRif(rifLimpio);
         if (clientePorRif) {
           finalClienteId = clientePorRif.id;
-
-          // Si el cliente existente no tenía dirección o teléfono y en esta compra vienen, enriquecemos la ficha
-          const datosActualizar: any = {};
-          if (info.telefono && !clientePorRif.telefono) datosActualizar.telefono = info.telefono;
-          if (info.direccion && !clientePorRif.direccion) datosActualizar.direccion = info.direccion;
-          if (info.empresa && !clientePorRif.empresa) datosActualizar.empresa = info.empresa;
-          if (Object.keys(datosActualizar).length > 0) {
-            await DataService.updateCliente(clientePorRif.id, datosActualizar);
-          }
+          // Si el cliente ya existe, no se modifican sus datos de contacto, crédito, etc.
         }
       }
 
