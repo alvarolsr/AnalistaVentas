@@ -552,18 +552,18 @@ export default function ProductosPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Package className="w-6 h-6 text-purple-600" />
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <Package className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
             <span>Portafolio de Productos</span>
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Catálogo comercial, niveles de inventario en tiempo real y precios unitarios.
           </p>
         </div>
 
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+        <div className="grid grid-cols-2 sm:flex sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {/* Botón Importar Catálogo PDF */}
           <button
             onClick={() => {
@@ -572,10 +572,11 @@ export default function ProductosPage() {
               setErrorPdf(null);
               setIsPdfModalOpen(true);
             }}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-semibold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-sm shadow-blue-500/20 transition whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-semibold px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-sm shadow-blue-500/20 transition truncate"
           >
             <FileUp className="w-4 h-4 shrink-0" />
-            <span>Importar Catálogo (PDF)</span>
+            <span className="hidden sm:inline">Importar Catálogo (PDF)</span>
+            <span className="sm:hidden truncate">Importar PDF</span>
           </button>
 
           {/* Botón Importar CSV */}
@@ -586,16 +587,16 @@ export default function ProductosPage() {
               setErrorCsv(null);
               setIsCsvModalOpen(true);
             }}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-semibold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-sm shadow-emerald-500/20 transition whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-semibold px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-sm shadow-emerald-500/20 transition truncate"
           >
             <FileSpreadsheet className="w-4 h-4 shrink-0" />
-            <span>Importar CSV</span>
+            <span className="truncate">Importar CSV</span>
           </button>
 
           {/* Botón Nuevo Producto */}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-sm transition whitespace-nowrap"
+            className="col-span-2 sm:col-span-1 w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-sm transition truncate"
           >
             <Plus className="w-4 h-4 shrink-0" />
             <span>Nuevo Producto</span>
@@ -707,13 +708,13 @@ export default function ProductosPage() {
           <p className="text-xs text-slate-400 mt-1">Registra productos o importa un catálogo PDF para comenzar.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
           {productosFiltrados.map((producto) => {
             const stockBajo = producto.stockActual <= 10;
             return (
               <div
                 key={producto.id}
-                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
@@ -1555,19 +1556,19 @@ export default function ProductosPage() {
 
       {/* MODAL 2: NUEVO PRODUCTO INDIVIDUAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-fade-in relative">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900">Añadir Producto al Portafolio</h2>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[92vh] flex flex-col p-4 sm:p-6 shadow-2xl animate-fade-in relative overflow-hidden">
+            <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100 shrink-0">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900">Añadir Producto al Portafolio</h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCrearProducto} className="mt-4 space-y-4">
+            <form onSubmit={handleCrearProducto} className="mt-4 space-y-4 overflow-y-auto pr-1 flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">

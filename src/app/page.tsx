@@ -102,86 +102,86 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto pb-12">
       {/* Title and Quick Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard de Analítica Comercial</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Dashboard de Analítica Comercial</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Resumen global de ventas, cartera de clientes y rendimiento del portafolio.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <Link
             href="/compras"
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm shadow-blue-500/20 transition"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-4 py-2 sm:py-2.5 rounded-xl shadow-sm shadow-blue-500/20 transition"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 shrink-0" />
             <span>Registrar Compra / Venta</span>
           </Link>
         </div>
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5">
         {/* Card 1: Ventas Totales */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ventas Acumuladas</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Ventas Acumuladas</span>
             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-              <DollarSign className="w-5 h-5" />
+              <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-4">
-            <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(kpis.totalVentas)}</h3>
-            <p className="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5" />
+          <div className="mt-3 sm:mt-4">
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{formatCurrency(kpis.totalVentas)}</h3>
+            <p className="text-[11px] sm:text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1">
+              <TrendingUp className="w-3.5 h-3.5 shrink-0" />
               <span>{kpis.totalCompras} compras procesadas</span>
             </p>
           </div>
         </div>
 
         {/* Card 2: Ticket Promedio */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ticket Promedio</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Ticket Promedio</span>
             <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-              <ArrowUpRight className="w-5 h-5" />
+              <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-4">
-            <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(kpis.ticketPromedio)}</h3>
-            <p className="text-xs text-slate-500 mt-1">Por orden completada</p>
+          <div className="mt-3 sm:mt-4">
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{formatCurrency(kpis.ticketPromedio)}</h3>
+            <p className="text-[11px] sm:text-xs text-slate-500 mt-1">Por orden completada</p>
           </div>
         </div>
 
         {/* Card 3: Cartera de Clientes */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cartera de Clientes</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Cartera de Clientes</span>
             <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
-              <Users className="w-5 h-5" />
+              <Users className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-4">
-            <h3 className="text-2xl font-bold text-slate-900">{kpis.totalClientes}</h3>
-            <p className="text-xs text-indigo-600 font-medium mt-1">
+          <div className="mt-3 sm:mt-4">
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{kpis.totalClientes}</h3>
+            <p className="text-[11px] sm:text-xs text-indigo-600 font-medium mt-1">
               <Link href="/clientes" className="hover:underline">Ver cartera completa &rarr;</Link>
             </p>
           </div>
         </div>
 
         {/* Card 4: Portafolio de Productos */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Portafolio Productos</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Portafolio Productos</span>
             <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
-              <Package className="w-5 h-5" />
+              <Package className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-4">
-            <h3 className="text-2xl font-bold text-slate-900">{kpis.totalProductos}</h3>
-            <p className="text-xs text-purple-600 font-medium mt-1">
+          <div className="mt-3 sm:mt-4">
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{kpis.totalProductos}</h3>
+            <p className="text-[11px] sm:text-xs text-purple-600 font-medium mt-1">
               <Link href="/productos" className="hover:underline">Explorar catálogo &rarr;</Link>
             </p>
           </div>
@@ -215,17 +215,17 @@ export default function DashboardPage() {
       )}
 
       {/* Grid: Top Clientes y Top Productos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8">
         {/* Top Clientes */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-base text-slate-900">Top Clientes por Facturación</h3>
-              <p className="text-xs text-slate-500">Cartera de mayor impacto en ingresos</p>
+            <div className="min-w-0 pr-2">
+              <h3 className="font-bold text-sm sm:text-base text-slate-900 truncate">Top Clientes por Facturación</h3>
+              <p className="text-[11px] sm:text-xs text-slate-500 truncate">Cartera de mayor impacto en ingresos</p>
             </div>
             <Link
               href="/clientes"
-              className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
+              className="text-xs text-blue-600 hover:text-blue-700 font-semibold shrink-0"
             >
               Ver todos
             </Link>
@@ -234,19 +234,19 @@ export default function DashboardPage() {
           <div className="divide-y divide-slate-100">
             {data?.topClientes && data.topClientes.length > 0 ? (
               data.topClientes.map((cliente, idx) => (
-                <div key={cliente.id} className="py-3.5 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold">
+                <div key={cliente.id} className="py-3 sm:py-3.5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] sm:text-xs font-bold shrink-0">
                       {idx + 1}
                     </span>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{cliente.nombre}</p>
-                      <p className="text-xs text-slate-500">{cliente.empresa || "Particular"}</p>
+                    <div className="min-w-0 truncate">
+                      <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">{cliente.nombre}</p>
+                      <p className="text-[11px] text-slate-500 truncate">{cliente.empresa || "Particular"}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-slate-900">{formatCurrency(cliente.total)}</p>
-                    <p className="text-[11px] text-slate-400">{cliente.ordenes} compras</p>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs sm:text-sm font-bold text-slate-900">{formatCurrency(cliente.total)}</p>
+                    <p className="text-[10px] sm:text-[11px] text-slate-400">{cliente.ordenes} compras</p>
                   </div>
                 </div>
               ))
@@ -257,15 +257,15 @@ export default function DashboardPage() {
         </div>
 
         {/* Top Productos */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-base text-slate-900">Productos Más Vendidos</h3>
-              <p className="text-xs text-slate-500">Unidades colocadas en el mercado</p>
+            <div className="min-w-0 pr-2">
+              <h3 className="font-bold text-sm sm:text-base text-slate-900 truncate">Productos Más Vendidos</h3>
+              <p className="text-[11px] sm:text-xs text-slate-500 truncate">Unidades colocadas en el mercado</p>
             </div>
             <Link
               href="/productos"
-              className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
+              className="text-xs text-blue-600 hover:text-blue-700 font-semibold shrink-0"
             >
               Ver catálogo
             </Link>
@@ -274,19 +274,19 @@ export default function DashboardPage() {
           <div className="divide-y divide-slate-100">
             {data?.topProductos && data.topProductos.length > 0 ? (
               data.topProductos.map((prod, idx) => (
-                <div key={prod.id} className="py-3.5 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-bold">
+                <div key={prod.id} className="py-3 sm:py-3.5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] sm:text-xs font-bold shrink-0">
                       {idx + 1}
                     </span>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{prod.nombre}</p>
-                      <p className="text-xs text-slate-500">SKU: {prod.sku}</p>
+                    <div className="min-w-0 truncate">
+                      <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">{prod.nombre}</p>
+                      <p className="text-[11px] text-slate-500 truncate">SKU: {prod.sku}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-blue-600">{prod.cantidad} unid.</p>
-                    <p className="text-[11px] text-slate-400">{formatCurrency(prod.totalRecaudado)}</p>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs sm:text-sm font-bold text-blue-600">{prod.cantidad} unid.</p>
+                    <p className="text-[10px] sm:text-[11px] text-slate-400">{formatCurrency(prod.totalRecaudado)}</p>
                   </div>
                 </div>
               ))
@@ -298,22 +298,70 @@ export default function DashboardPage() {
       </div>
 
       {/* Compras Recientes */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="font-bold text-base text-slate-900">Registro de Transacciones Recientes</h3>
-            <p className="text-xs text-slate-500">Últimas compras efectuadas por la cartera de clientes</p>
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between mb-4 sm:mb-5">
+          <div className="min-w-0 pr-2">
+            <h3 className="font-bold text-sm sm:text-base text-slate-900 truncate">Registro de Transacciones Recientes</h3>
+            <p className="text-[11px] sm:text-xs text-slate-500 truncate">Últimas compras efectuadas por la cartera de clientes</p>
           </div>
           <Link
             href="/compras"
-            className="text-xs text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1"
+            className="text-xs text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1 shrink-0"
           >
-            <span>Ver historial completo</span>
+            <span>Historial</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Vista Móvil (< md): Tarjetas compactas */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {data?.comprasRecientes && data.comprasRecientes.length > 0 ? (
+            data.comprasRecientes.map((compra) => (
+              <div key={compra.id} className="py-3.5 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-xs text-slate-900">{compra.numeroFactura}</span>
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${
+                      compra.estado === "completada"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : compra.estado === "pendiente"
+                        ? "bg-amber-50 text-amber-700 border border-amber-200"
+                        : "bg-rose-50 text-rose-700 border border-rose-200"
+                    }`}
+                  >
+                    {compra.estado}
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <div className="min-w-0 truncate">
+                    <p className="text-xs font-medium text-slate-800 truncate">{compra.clienteNombre}</p>
+                    {compra.clienteEmpresa && (
+                      <p className="text-[10px] text-slate-400 truncate">{compra.clienteEmpresa}</p>
+                    )}
+                  </div>
+                  <span className="text-sm font-bold text-slate-900 shrink-0 font-mono">
+                    {formatCurrency(Number(compra.total))}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+                  <span>
+                    {new Date(compra.fechaCompra).toLocaleDateString("es-ES", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                  <span className="capitalize text-slate-500">{compra.metodoPago}</span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="py-8 text-center text-xs text-slate-400">No hay transacciones registradas.</p>
+          )}
+        </div>
+
+        {/* Vista Escritorio (>= md): Tabla completa */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-100 text-xs font-semibold text-slate-400 uppercase tracking-wider">

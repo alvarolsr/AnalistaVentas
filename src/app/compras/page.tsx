@@ -452,18 +452,18 @@ export default function ComprasPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <ShoppingCart className="w-6 h-6 text-emerald-600" />
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
             <span>Registro y Facturación de Compras</span>
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Control de órdenes de compra realizadas por clientes, emisión de comprobantes, métodos de pago y digitalización de facturas PDF.
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Control de órdenes de compra realizadas por clientes, emisión de comprobantes y digitalización de facturas PDF.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {/* Botón Cargar Factura PDF */}
           <button
             onClick={() => {
@@ -473,11 +473,11 @@ export default function ComprasPage() {
               setPreClienteId("");
               setIsPdfModalOpen(true);
             }}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm hover:shadow transition"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-semibold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-sm hover:shadow transition"
           >
-            <UploadCloud className="w-4 h-4" />
-            <span>Cargar Factura / Nota (PDF)</span>
-            <span className="bg-white/20 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider flex items-center gap-1">
+            <UploadCloud className="w-4 h-4 shrink-0" />
+            <span className="truncate">Cargar Factura (PDF)</span>
+            <span className="bg-white/20 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider flex items-center gap-1 shrink-0">
               <Sparkles className="w-2.5 h-2.5 text-amber-200" />
               AI
             </span>
@@ -486,9 +486,9 @@ export default function ComprasPage() {
           {/* Botón Registrar Manual */}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-sm transition truncate"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 shrink-0" />
             <span>Registrar Compra Manual</span>
           </button>
         </div>
@@ -542,7 +542,73 @@ export default function ComprasPage() {
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Vista Móvil (< md): Lista de tarjetas estructuradas */}
+          <div className="md:hidden divide-y divide-slate-100 p-2 sm:p-4">
+            {comprasFiltradas.map((compra) => (
+              <div key={compra.id} className="py-3 px-1 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-xs text-slate-900 font-mono">{compra.numeroFactura}</span>
+                  <div className="relative inline-flex items-center">
+                    <select
+                      value={compra.estado}
+                      disabled={actualizandoEstadoId === compra.id}
+                      onChange={(e) => handleCambiarEstado(compra.id, e.target.value)}
+                      className={`text-[11px] font-semibold pl-2 pr-5 py-0.5 rounded-full border cursor-pointer transition-all appearance-none focus:outline-none capitalize ${
+                        compra.estado === "completada"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : compra.estado === "pendiente"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : "bg-rose-50 text-rose-700 border-rose-200"
+                      }`}
+                    >
+                      <option value="completada">Completada</option>
+                      <option value="pendiente">Pendiente</option>
+                      <option value="cancelada">Cancelada</option>
+                    </select>
+                    <div className="pointer-events-none absolute right-1 flex items-center">
+                      {actualizandoEstadoId === compra.id ? (
+                        <RefreshCw className="w-2.5 h-2.5 animate-spin text-slate-500" />
+                      ) : (
+                        <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-baseline justify-between gap-2">
+                  <div className="min-w-0 truncate">
+                    <p className="text-xs font-semibold text-slate-800 truncate">{compra.clienteNombre}</p>
+                    {compra.clienteEmpresa && (
+                      <p className="text-[10px] text-slate-400 truncate">{compra.clienteEmpresa}</p>
+                    )}
+                  </div>
+                  <span className="text-sm font-extrabold text-slate-900 shrink-0 font-mono">
+                    {formatCurrency(compra.total)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                  <span>
+                    {new Date(compra.fechaCompra).toLocaleDateString("es-ES", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })} • <span className="capitalize text-slate-500">{compra.metodoPago}</span>
+                  </span>
+                  <button
+                    onClick={() => setCompraDetalleSeleccionada(compra)}
+                    className="inline-flex items-center gap-1 text-[11px] text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 transition"
+                  >
+                    <FileText className="w-3 h-3" />
+                    <span>Ver Factura</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Vista Escritorio (>= md): Tabla completa */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50">
@@ -1305,24 +1371,24 @@ export default function ComprasPage() {
                     {items.map((it) => {
                       const prod = productos.find((p) => p.id === it.productoId);
                       return (
-                        <div key={it.productoId} className="p-3 flex items-center justify-between text-xs">
-                          <div className="flex-1">
-                            <p className="font-semibold text-slate-900">{prod?.nombre}</p>
-                            <p className="text-slate-400 font-mono text-[11px]">{prod?.codigoSku} · {formatCurrency(it.precioUnitario)} c/u</p>
+                        <div key={it.productoId} className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-slate-900 truncate">{prod?.nombre}</p>
+                            <p className="text-slate-400 font-mono text-[11px] truncate">{prod?.codigoSku} · {formatCurrency(it.precioUnitario)} c/u</p>
                           </div>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto shrink-0">
                             <div className="flex items-center gap-1.5">
-                              <label className="text-slate-500 font-medium">Cant:</label>
+                              <label className="text-slate-500 font-medium text-[11px]">Cant:</label>
                               <input
                                 type="number"
                                 min="1"
                                 max={prod?.stockActual || 999}
                                 value={it.cantidad}
                                 onChange={(e) => handleUpdateItemCantidad(it.productoId, parseInt(e.target.value) || 1)}
-                                className="w-16 bg-slate-50 border border-slate-300 rounded px-2 py-1 text-center font-bold"
+                                className="w-14 bg-slate-50 border border-slate-300 rounded px-1.5 py-0.5 text-center font-bold"
                               />
                             </div>
-                            <span className="font-bold text-slate-900 w-20 text-right">
+                            <span className="font-bold text-slate-900 font-mono">
                               {formatCurrency(it.cantidad * it.precioUnitario)}
                             </span>
                             <button
@@ -1427,11 +1493,11 @@ export default function ComprasPage() {
       {/* ======================================================== */}
       {compraDetalleSeleccionada && (
         <div 
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 sm:p-6"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6"
           onClick={() => setCompraDetalleSeleccionada(null)}
         >
           <div 
-            className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl animate-fade-in relative max-h-[90vh] flex flex-col"
+            className="bg-white rounded-2xl max-w-xl w-full p-4 sm:p-6 shadow-2xl animate-fade-in relative max-h-[92vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Encabezado fijo */}

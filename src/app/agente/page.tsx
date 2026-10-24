@@ -274,21 +274,21 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
   };
 
   return (
-    <div className="max-w-6xl mx-auto h-[calc(100dvh-10rem)] md:h-[calc(100vh-8.5rem)] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-fade-in">
+    <div className="max-w-6xl mx-auto h-[calc(100dvh-10.5rem)] md:h-[calc(100vh-8.5rem)] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-fade-in">
       {/* Barra Superior del Agente */}
-      <div className="px-3.5 sm:px-6 py-3 sm:py-3.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-          <div className="p-2 bg-gradient-to-tr from-purple-500 to-indigo-500 text-white rounded-xl shadow-md shadow-indigo-500/25 shrink-0">
+      <div className="px-3 sm:px-6 py-2.5 sm:py-3.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 bg-gradient-to-tr from-purple-500 to-indigo-500 text-white rounded-xl shadow-md shadow-indigo-500/25 shrink-0">
             <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div className="truncate">
-            <div className="flex items-center gap-2">
+          <div className="min-w-0 truncate">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <h2 className="text-xs sm:text-sm font-bold tracking-tight truncate">Agente Analista</h2>
               <button
                 type="button"
                 onClick={() => setMostrarConfig(true)}
                 title="Clic para cambiar modelo en configuración"
-                className="px-2 py-0.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[9px] sm:text-[10px] font-bold rounded-full uppercase tracking-wider shrink-0 transition"
+                className="px-1.5 sm:px-2 py-0.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[9px] sm:text-[10px] font-bold rounded-full uppercase tracking-wider shrink-0 transition"
               >
                 {modelo === "gemini-3.8-flash"
                   ? "Gemini 3.8 Flash"
@@ -306,14 +306,14 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             onClick={() => setMostrarConfig(true)}
             title="Configurar Indicaciones Personalizadas del Agente"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl transition"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl transition"
           >
             <Sliders className="w-3.5 h-3.5 text-indigo-300" />
-            <span>Indicaciones</span>
+            <span className="hidden xs:inline">Indicaciones</span>
           </button>
 
           <button
@@ -429,23 +429,23 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
       )}
 
       {/* Input de Envío y Botón de Adjuntar */}
-      <div className="p-4 bg-white border-t border-slate-200 shrink-0 space-y-2">
+      <div className="p-2.5 sm:p-4 bg-white border-t border-slate-200 shrink-0 space-y-2">
         {/* Vista previa del archivo listo para enviar */}
         {archivoAdjunto && (
-          <div className="flex items-center justify-between bg-indigo-50 border border-indigo-200 px-3.5 py-2 rounded-xl text-xs text-indigo-900 animate-fade-in">
-            <div className="flex items-center gap-2.5 truncate">
-              <div className="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg">
-                <FileText className="w-4 h-4" />
+          <div className="flex items-center justify-between bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-xl text-xs text-indigo-900 animate-fade-in">
+            <div className="flex items-center gap-2 truncate">
+              <div className="p-1 bg-indigo-100 text-indigo-700 rounded-lg shrink-0">
+                <FileText className="w-3.5 h-3.5" />
               </div>
               <div className="truncate">
                 <p className="font-semibold truncate">{archivoAdjunto.nombre}</p>
-                <p className="text-[10px] text-indigo-600">{archivoAdjunto.tamaño} • Listo para analizar con Gemini</p>
+                <p className="text-[10px] text-indigo-600 truncate">{archivoAdjunto.tamaño} • Listo para analizar</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setArchivoAdjunto(null)}
-              className="text-indigo-400 hover:text-rose-600 p-1 transition"
+              className="text-indigo-400 hover:text-rose-600 p-1 transition shrink-0"
               title="Quitar archivo"
             >
               <X className="w-4 h-4" />
@@ -458,7 +458,7 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
             e.preventDefault();
             enviarMensaje(input);
           }}
-          className="flex items-center gap-2"
+          className="flex items-center gap-1.5 sm:gap-2"
         >
           {/* Input oculto de archivos */}
           <input
@@ -475,7 +475,7 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
             onClick={() => fileInputRef.current?.click()}
             disabled={cargando}
             title="Adjuntar archivo (PDF, Imagen, CSV, Texto)"
-            className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition disabled:opacity-40 shrink-0 flex items-center justify-center"
+            className="p-2.5 sm:p-3 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition disabled:opacity-40 shrink-0 flex items-center justify-center"
           >
             <Paperclip className="w-4 h-4" />
           </button>
@@ -484,21 +484,21 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
             type="text"
             placeholder={
               archivoAdjunto
-                ? `Añade instrucciones para ${archivoAdjunto.nombre} o pulsa Enviar...`
-                : "Pregúntale al Agente o adjunta un archivo (PDF, factura, cotización, lista de precios)..."
+                ? `Instrucciones para ${archivoAdjunto.nombre}...`
+                : "Pregúntale al Agente o adjunta un archivo..."
             }
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={cargando}
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition"
+            className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition"
           />
 
           <button
             type="submit"
             disabled={(!input.trim() && !archivoAdjunto) || cargando}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 text-white font-semibold px-5 py-3 rounded-xl shadow-sm transition flex items-center gap-2 shrink-0"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 text-white font-semibold px-3 sm:px-5 py-2.5 sm:py-3 rounded-xl shadow-sm transition flex items-center gap-1.5 sm:gap-2 shrink-0"
           >
-            <span>Enviar</span>
+            <span className="hidden sm:inline">Enviar</span>
             <Send className="w-4 h-4" />
           </button>
         </form>
@@ -506,8 +506,8 @@ Puedes consultarme análisis comerciales, balances de inventario o darme **indic
 
       {/* MODAL: INDICACIONES PERSONALIZADAS DEL AGENTE */}
       {mostrarConfig && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl animate-fade-in space-y-4">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] flex flex-col p-4 sm:p-6 shadow-2xl animate-fade-in space-y-4 overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">

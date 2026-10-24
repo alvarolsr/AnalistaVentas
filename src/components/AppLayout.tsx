@@ -29,7 +29,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           />
 
           {/* Panel lateral */}
-          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-slate-900 shadow-2xl z-10 animate-fade-in">
+          <div className="relative flex-1 flex flex-col max-w-[280px] w-full bg-slate-900 shadow-2xl z-10 animate-fade-in">
             <Sidebar onClose={() => setSidebarOpen(false)} isMobile />
           </div>
         </div>
@@ -40,7 +40,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <Header onOpenSidebar={() => setSidebarOpen(true)} />
         
         {/* Contenido scrolleable con padding inferior para no solapar la barra móvil */}
-        <main className="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-8 pb-20 md:pb-8">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-20 md:pb-8">
           {children}
         </main>
 
