@@ -41,29 +41,33 @@ export async function POST(req: Request) {
       };
 
       const nombreLimpio = String(info.nombre || "").trim();
-      const rifLimpio = info.rif ? String(info.rif).trim().toUpperCase() : null;
+      const rifLimpio = info.rif || body.rif || body.clienteRif ? String(info.rif || body.rif || body.clienteRif).trim() : null;
 
-      if (db) {
-        // 1. Intentar buscar si ya existe por RIF
-        if (rifLimpio) {
-          const encontradosRif = await db
-            .select({ id: clientes.id })
-            .from(clientes)
-            .where(ilike(clientes.rif, rifLimpio));
-          if (encontradosRif.length > 0) {
-            finalClienteId = encontradosRif[0].id;
+      // 1. PRIORIDAD TOTAL: Buscar siempre por RIF normalizado (sin importar guiones, puntos o mayúsculas)
+      if (rifLimpio) {
+        const clientePorRif = await DataService.getClienteByRif(rifLimpio);
+        if (clientePorRif) {
+          finalClienteId = clientePorRif.id;
+
+          // Si el cliente existente no tenía dirección o teléfono y en esta compra vienen, enriquecemos la ficha
+          const datosActualizar: any = {};
+          if (info.telefono && !clientePorRif.telefono) datosActualizar.telefono = info.telefono;
+          if (info.direccion && !clientePorRif.direccion) datosActualizar.direccion = info.direccion;
+          if (info.empresa && !clientePorRif.empresa) datosActualizar.empresa = info.empresa;
+          if (Object.keys(datosActualizar).length > 0) {
+            await DataService.updateCliente(clientePorRif.id, datosActualizar);
           }
         }
+      }
 
-        // 2. Si no por RIF, buscar por coincidencia de nombre
-        if (!finalClienteId && nombreLimpio) {
-          const encontradosNom = await db
-            .select({ id: clientes.id })
-            .from(clientes)
-            .where(ilike(clientes.nombre, nombreLimpio));
-          if (encontradosNom.length > 0) {
-            finalClienteId = encontradosNom[0].id;
-          }
+      // 2. Si no se encontró por RIF (o no venía RIF), buscar por coincidencia de nombre
+      if (!finalClienteId && nombreLimpio && db) {
+        const encontradosNom = await db
+          .select({ id: clientes.id })
+          .from(clientes)
+          .where(ilike(clientes.nombre, nombreLimpio));
+        if (encontradosNom.length > 0) {
+          finalClienteId = encontradosNom[0].id;
         }
       }
 

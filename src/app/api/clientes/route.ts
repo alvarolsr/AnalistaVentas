@@ -23,6 +23,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Nombre y correo son requeridos" }, { status: 400 });
     }
 
+    // Verificar si ya existe un cliente con este RIF para evitar duplicados
+    if (body.rif) {
+      const existente = await DataService.getClienteByRif(body.rif);
+      if (existente) {
+        return NextResponse.json(
+          { error: `Ya existe un cliente registrado con este RIF: "${existente.nombre}" (${existente.rif})` },
+          { status: 409 }
+        );
+      }
+    }
+
     const nuevoCliente = await DataService.createCliente({
       nombre: body.nombre.trim(),
       rif: body.rif ? body.rif.trim().toUpperCase() : null,

@@ -12,6 +12,11 @@ import {
 } from "./schema";
 import { eq, desc, sql, ilike, or } from "drizzle-orm";
 
+export function normalizeRif(rif?: string | null): string {
+  if (!rif) return "";
+  return String(rif).replace(/[^a-zA-Z0-9]/g, "").toUpperCase().trim();
+}
+
 export interface CategoriaConSubcategorias extends Categoria {
   subcategorias: Categoria[];
 }
@@ -387,7 +392,43 @@ export const DataService = {
     return mockClientes.find((c) => c.id === id) || null;
   },
 
+  async getClienteByRif(rif: string): Promise<Cliente | null> {
+    const clean = normalizeRif(rif);
+    if (!clean || clean.length < 5) return null;
+    const db = getDb();
+    if (db) {
+      try {
+        const res = await db
+          .select()
+          .from(clientes)
+          .where(sql`regexp_replace(upper(${clientes.rif}), '[^A-Z0-9]', '', 'g') = ${clean}`);
+        if (res.length > 0) return res[0];
+      } catch (err) {
+        console.error("Error buscando cliente por RIF en Neon:", err);
+      }
+    }
+    return mockClientes.find((c) => normalizeRif(c.rif) === clean) || null;
+  },
+
   async createCliente(data: Omit<Cliente, "id" | "creadoEn">): Promise<Cliente> {
+    // Si viene RIF, verificar primero si ya existe para asociar y evitar duplicados
+    if (data.rif) {
+      const existente = await this.getClienteByRif(data.rif);
+      if (existente) {
+        const camposAActualizar: Partial<Omit<Cliente, "id" | "creadoEn">> = {};
+        if (data.telefono && !existente.telefono) camposAActualizar.telefono = data.telefono;
+        if (data.direccion && !existente.direccion) camposAActualizar.direccion = data.direccion;
+        if (data.empresa && !existente.empresa) camposAActualizar.empresa = data.empresa;
+        if (data.nombre && existente.nombre.length < 8 && data.nombre.length > existente.nombre.length) {
+          camposAActualizar.nombre = data.nombre;
+        }
+        if (Object.keys(camposAActualizar).length > 0) {
+          await this.updateCliente(existente.id, camposAActualizar);
+        }
+        return (await this.getClienteById(existente.id)) || existente;
+      }
+    }
+
     const db = getDb();
     if (db) {
       try {

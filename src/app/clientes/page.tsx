@@ -244,16 +244,17 @@ export default function ClientesPage() {
 
   // Datos para el historial del cliente seleccionado
   const comprasDelClienteSeleccionado = clienteHistorial
-    ? compras.filter(
-        (c) =>
-          c.clienteId === clienteHistorial.id ||
-          (c.clienteNombre &&
+    ? compras.filter((c) => {
+        if (c.clienteId === clienteHistorial.id) return true;
+        const normRifC = c.clienteRif ? c.clienteRif.replace(/[^a-zA-Z0-9]/g, "").toUpperCase() : "";
+        const normRifHist = clienteHistorial.rif ? clienteHistorial.rif.replace(/[^a-zA-Z0-9]/g, "").toUpperCase() : "";
+        if (normRifC && normRifHist && normRifC === normRifHist) return true;
+        return Boolean(
+          c.clienteNombre &&
             clienteHistorial.nombre &&
-            c.clienteNombre.trim().toLowerCase() === clienteHistorial.nombre.trim().toLowerCase()) ||
-          (c.clienteRif &&
-            clienteHistorial.rif &&
-            c.clienteRif.trim().toLowerCase() === clienteHistorial.rif.trim().toLowerCase())
-      )
+            c.clienteNombre.trim().toLowerCase() === clienteHistorial.nombre.trim().toLowerCase()
+        );
+      })
     : [];
 
   const comprasFiltradasHistorial = comprasDelClienteSeleccionado.filter((c) => {
@@ -381,16 +382,17 @@ export default function ClientesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
           {clientesFiltrados.map((cliente) => {
-            const comprasCliente = compras.filter(
-              (c) =>
-                c.clienteId === cliente.id ||
-                (c.clienteNombre &&
+            const comprasCliente = compras.filter((c) => {
+              if (c.clienteId === cliente.id) return true;
+              const normRifC = c.clienteRif ? c.clienteRif.replace(/[^a-zA-Z0-9]/g, "").toUpperCase() : "";
+              const normRifCli = cliente.rif ? cliente.rif.replace(/[^a-zA-Z0-9]/g, "").toUpperCase() : "";
+              if (normRifC && normRifCli && normRifC === normRifCli) return true;
+              return Boolean(
+                c.clienteNombre &&
                   cliente.nombre &&
-                  c.clienteNombre.trim().toLowerCase() === cliente.nombre.trim().toLowerCase()) ||
-                (c.clienteRif &&
-                  cliente.rif &&
-                  c.clienteRif.trim().toLowerCase() === cliente.rif.trim().toLowerCase())
-            );
+                  c.clienteNombre.trim().toLowerCase() === cliente.nombre.trim().toLowerCase()
+              );
+            });
             const totalGastadoCliente = comprasCliente
               .filter((c) => c.estado === "completada")
               .reduce((sum, c) => sum + Number(c.total || 0), 0);

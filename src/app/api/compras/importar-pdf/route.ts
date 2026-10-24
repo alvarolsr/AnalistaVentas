@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { extractText } from "unpdf";
 import { extraerFacturaConGemini, type FacturaExtraida, type ItemFacturaExtraido } from "./geminiInvoiceAgent";
 import { getDb } from "@/db";
+import { DataService } from "@/db/service";
 import { clientes, productos } from "@/db/schema";
 import { ilike, or, inArray, and } from "drizzle-orm";
 
@@ -87,14 +88,11 @@ export async function POST(req: Request) {
           const rifExtraido = facturaExtraida.clienteDetectado.rif?.replace(/[^a-zA-Z0-9]/g, "");
           const nombreExtraido = (facturaExtraida.clienteDetectado.nombre || "").trim();
 
-          // 1. Buscar por RIF exacto primero (el RIF debe tener al menos 6 caracteres y no ser genérico)
-          if (rifExtraido && rifExtraido.length >= 6) {
-            const clientRows = await db
-              .select()
-              .from(clientes)
-              .where(ilike(clientes.rif, `%${rifExtraido}%`));
-            if (clientRows.length > 0) {
-              clienteSugerido = clientRows[0];
+          // 1. PRIORIDAD TOTAL: Buscar por RIF normalizado (insensible a guiones, espacios y puntos)
+          if (rifExtraido && rifExtraido.length >= 5) {
+            const clientePorRif = await DataService.getClienteByRif(rifExtraido);
+            if (clientePorRif) {
+              clienteSugerido = clientePorRif;
             }
           }
 
